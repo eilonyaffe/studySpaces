@@ -19,12 +19,12 @@ function askQuestion(query: string): Promise<string> {
 async function run() {
   const semester = await askQuestion('Enter semester (1, 2, or 3): ');
   if (!['1', '2', '3'].includes(semester)) {
-    console.error('❌ Invalid semester value. Please enter 1, 2, or 3.');
+    console.error('Invalid semester value. Please enter 1, 2, or 3.');
     return;
   }
 
-  const browser = await puppeteer.launch({ headless: false });
-  const page = await browser.newPage();
+  const browser = await puppeteer.launch({ headless: false });  // launch chromium
+  const page = await browser.newPage();  // open a new page
 
   await page.goto('https://bgu4u.bgu.ac.il/pls/scwp/!app.gate?app=ann', {
     waitUntil: 'domcontentloaded',
@@ -49,16 +49,16 @@ async function run() {
   const elementHandle = handle.asElement() as ElementHandle<HTMLElement> | null;
   if (elementHandle) {
     await elementHandle.click();
-    console.log("✅ Clicked 'חיפוש מורחב'");
+    console.log("✅ Clicked 'advanced search'");
   } else {
-    console.log("❌ Could not find 'חיפוש מורחב'");
+    console.log("Could not find 'advanced search'");
     await browser.close();
     return;
   }
 
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  // Re-fetch the frame after the page changes
+  // Re-fetch the frame after the page reloads to the advanced search screen
   const searchFrame = page.frames().find(f => f.name() === 'main');
   if (!searchFrame) {
     console.error('Search frame not found after click');
@@ -66,27 +66,27 @@ async function run() {
     return;
   }
 
-  // Use XPath to find the input for course name
+  // input * instead of course name
   const inputHandle = await searchFrame.$('#oc_course_name');
 
   const inputField = inputHandle as ElementHandle<HTMLInputElement> | null;
   if (inputField) {
     await inputField.click({ clickCount: 3 }); // select existing text
     await inputField.type('*');
-    console.log("✅ Typed '*' into course name field");
+    console.log("Typed '*' into course name field");
   } else {
-    console.log("❌ Could not find course name input field");
+    console.log("Could not find course name input field");
     await browser.close();
     return;
   }
 
-  // choose a different semester
+  // choose a different semester per the user's input
   const semesterDropdown = await searchFrame.$('#on_semester') as ElementHandle<HTMLSelectElement> | null;
   if (semesterDropdown) {
     await semesterDropdown.select(semester);
-    console.log(`✅ Selected semester '${semester}'`);
+    console.log(`Selected semester '${semester}'`);
   } else {
-    console.log("❌ Could not find semester dropdown");
+    console.log("Could not find semester dropdown");
     await browser.close();
     return;
   }
@@ -96,9 +96,9 @@ async function run() {
 
   if (searchBtn) {
     await searchBtn.click();
-    console.log("✅ Clicked 'חפש' button");
+    console.log("Clicked 'search' button");
   } else {
-    console.log("❌ Could not find 'חפש' button");
+    console.log("Could not find 'search' button");
   }
 
   await new Promise(resolve => setTimeout(resolve, 3000));
