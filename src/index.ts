@@ -1,6 +1,28 @@
 import puppeteer, { ElementHandle } from 'puppeteer';
+import * as readline from 'readline';
+
+// Prompt the user for input
+function askQuestion(query: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise(resolve =>
+    rl.question(query, answer => {
+      rl.close();
+      resolve(answer.trim());
+    })
+  );
+}
 
 async function run() {
+  const semester = await askQuestion('Enter semester (1, 2, or 3): ');
+  if (!['1', '2', '3'].includes(semester)) {
+    console.error('❌ Invalid semester value. Please enter 1, 2, or 3.');
+    return;
+  }
+
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
 
@@ -47,7 +69,6 @@ async function run() {
   // Use XPath to find the input for course name
   const inputHandle = await searchFrame.$('#oc_course_name');
 
-
   const inputField = inputHandle as ElementHandle<HTMLInputElement> | null;
   if (inputField) {
     await inputField.click({ clickCount: 3 }); // select existing text
@@ -62,8 +83,8 @@ async function run() {
   // choose a different semester
   const semesterDropdown = await searchFrame.$('#on_semester') as ElementHandle<HTMLSelectElement> | null;
   if (semesterDropdown) {
-    await semesterDropdown.select('2');
-    console.log("✅ Selected semester '2'");
+    await semesterDropdown.select(semester);
+    console.log(`✅ Selected semester '${semester}'`);
   } else {
     console.log("❌ Could not find semester dropdown");
     await browser.close();
