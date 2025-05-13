@@ -207,7 +207,6 @@ async function run() {
   }
 
   const dir = path.join('data/full');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   const outputPath = path.join(dir, `semester_${semester}.json`);
   fs.writeFileSync(outputPath, JSON.stringify(results, null, 2), 'utf-8');
   console.log(`💾 Saved ${results.length} entries to ${outputPath}`);
