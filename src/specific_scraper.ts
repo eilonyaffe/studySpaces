@@ -210,29 +210,45 @@ async function run() {
           continue;
         }
     
-        const data: timeSpace | null = await resultFrame2.evaluate((map) => {
-          const td = document.querySelector('td.BlackInput.no_dbg_border_r');
-          if (!td) return null;               // ← changed: just skip
-    
-          const txt = td.textContent || '';
-          const day  = map[ (txt.match(/יום [א-ז]/)?.[0] || '') ] ?? -1;
-          const t    = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-          const start= t ? parseInt(t[1]+t[2]) : -1;
-          const end  = t ? parseInt(t[3]+t[4]) : -1;
-          const bld  = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
-          const room = +(txt.match(/חדר\s*(\d+)/)?.[1] ?? -1);
-    
-          return { building: bld, room, day, start, end };
+        const scheduleItems: timeSpace[] = await resultFrame2.evaluate((map) => {
+            const seen = new Set<string>();
+            const output: timeSpace[] = [];
+          
+            // every table row on the page
+            const rows = Array.from(document.querySelectorAll('tr'));
+          
+            for (const row of rows) {
+              const txt = row.textContent?.replace(/\s+/g, ' ').trim() || '';
+          
+              // only rows that look like a schedule line
+              if (!/יום [א-ז]/.test(txt) || !/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/.test(txt))
+                continue;
+          
+              const day   = map[txt.match(/יום [א-ז]/)![0]] ?? -1;
+              const t     = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/)!;
+              const start = parseInt(t[1] + t[2]);        // e.g. "13:00" → 1300
+              const end   = parseInt(t[3] + t[4]);
+              const bld   = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
+              const room  = +(txt.match(/חדר\s*(\d+)/)?.[1] ?? -1);
+          
+              const item: any = { building: bld, room, day, start, end };
+              if (Object.values(item).includes(-1)) continue;      // reject partial rows
+          
+              const key = JSON.stringify(item);                    // de-dup
+              if (!seen.has(key)) {
+                seen.add(key);
+                output.push(item);
+              }
+            }
+          
+            return output;
         }, hebrewDayMap);
     
-        if (data) {
-          const hasInvalidField = Object.values(data).includes(-1);
-          if (!hasInvalidField) {
-            results.push(data);
-            console.log('✅ Scraped:', data);
-          }
+        if (scheduleItems.length > 0) {
+            results.push(...scheduleItems);
+            console.log(`✅ Scraped ${scheduleItems.length} schedule(s):`, scheduleItems);
         } else {
-          console.log('ℹ️ Skipped course – no schedule cell');
+            console.log('ℹ️ Skipped course – no valid schedule entries found');
         }
     
         await resultFrame2.evaluate(() => window.history.back());
