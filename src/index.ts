@@ -175,35 +175,41 @@ async function run() {
       continue;
     }
   
-    const data: timeSpace | null = await resultFrame2.evaluate((map) => {
-      const td = document.querySelector('td.BlackInput.no_dbg_border_r');
-      if (!td) return null;               // ← changed: just skip
+    const rows: (timeSpace | null)[] = await resultFrame2.evaluate((map) => {
+      const out: timeSpace[] = [];
     
-      const txt = td.textContent || '';
-      const day  = map[ (txt.match(/יום [א-ז]/)?.[0] || '') ] ?? -1;
-      const t    = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-      const start= t ? parseInt(t[1]+t[2]) : -1;
-      const end  = t ? parseInt(t[3]+t[4]) : -1;
-      const bld  = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
-      const room = +(txt.match(/חדר\s*(\d+)/)?.[1] ?? -1);
+      // each schedule appears in its own <tr> inside the table whose id is "dataTable"
+      const trs = Array.from(document.querySelectorAll('#dataTable tr'));
     
-      return { building: bld, room, day, start, end };
+      trs.forEach(tr => {
+        const txt = tr.textContent?.replace(/\u200F/g, '').trim() || '';
+    
+        // ignore header / empty rows
+        if (!txt || !/יום [א-ז]/.test(txt)) return;
+    
+        const day  = map[ (txt.match(/יום [א-ז]/)?.[0] || '') ] ?? -1;
+        const t    = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+        const start= t ? parseInt(t[1]+t[2]) : -1;
+        const end  = t ? parseInt(t[3]+t[4]) : -1;
+        const bld  = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
+        const room = +(txt.match(/חדר\s*(\d+)/)?.[1] ?? -1);
+    
+        out.push({ building: bld, room, day, start, end });
+      });
+    
+      return out;                 // ← an array now
     }, hebrewDayMap);
     
-    if (data) {
-      const hasMissing = Object.values(data).some(v => v === -1);
-      if(hasMissing){
-        console.log('I Skipped course, missing fields');
+    rows.forEach(r => {
+      if (!r) return;                               // null-guard (not expected now)
+      const missing = Object.values(r).some(v => v === -1);
+      if (missing) {
+        console.log('⏭  Skipped – some field missing', r);
+      } else {
+        results.push(r);
+        console.log('✅ Saved:', r);
       }
-      else{
-        results.push(data);
-        console.log('V Scraped:', data);
-      }
-
-    } 
-    else {
-      console.log('I Skipped course – no schedule cell');
-    }
+    });
   
     await resultFrame2.evaluate(() => window.history.back());
 
@@ -237,7 +243,7 @@ async function run() {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   const outputPath = path.join(dir, `semester_${semester}.json`);
   fs.writeFileSync(outputPath, JSON.stringify(results, null, 2), 'utf-8');
-  console.log(`💾 Saved ${results.length} entries to ${outputPath}`);
+  console.log(`Saved ${results.length} entries to ${outputPath}`);
 
   await browser.close();
 }
