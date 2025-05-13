@@ -132,85 +132,74 @@ async function run() {
 
   let i = 0;
   const total = courseLinks.length;
-  
+
   while (i < total) {
     frame = page.frames().find(f => f.name() === 'main');
     if (!frame) break;
-  
+
     // re-fetch current list of hrefs
     const hrefs: string[] = await frame.$$eval('a', anchors =>
       anchors
         .filter(a => a.href.includes("javascript:goCourseSemester"))
         .map(a => a.getAttribute('href') || '')
     );
-  
+
     const href = hrefs[i];
     if (!href) {
       console.log(`X Skipping missing link at index ${i}`);
       i++;
       continue;
     }
-  
+
     console.log(`➡ Visiting course ${i + 1}/${total}`);
-  
+
     const handle = await frame.evaluateHandle((href) => {
       const a = Array.from(document.querySelectorAll('a')) as HTMLAnchorElement[];
       return a.find(el => el.getAttribute('href') === href) || null;
     }, href);
-  
+
     const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
     if (!courseLink) {
       console.log("X Could not find course link");
       i++;
       continue;
     }
-  
+
     await courseLink.click();
     await new Promise(resolve => setTimeout(resolve, 2000));
-  
+
     const resultFrame2 = page.frames().find(f => f.name() === 'main');
     if (!resultFrame2) {
       console.log("X Missing course details frame");
       i++;
       continue;
     }
-  
-    const rows: (timeSpace | null)[] = await resultFrame2.evaluate((map) => {
-      const out: timeSpace[] = [];
-    
-      // each schedule appears in its own <tr> inside the table whose id is "dataTable"
-      const trs = Array.from(document.querySelectorAll('#dataTable tr'));
-    
-      trs.forEach(tr => {
-        const txt = tr.textContent?.replace(/\u200F/g, '').trim() || '';
-    
-        // ignore header / empty rows
-        if (!txt || !/יום [א-ז]/.test(txt)) return;
-    
-        const day  = map[ (txt.match(/יום [א-ז]/)?.[0] || '') ] ?? -1;
-        const t    = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-        const start= t ? parseInt(t[1]+t[2]) : -1;
-        const end  = t ? parseInt(t[3]+t[4]) : -1;
-        const bld  = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
-        const room = +(txt.match(/חדר\s*(\d+)/)?.[1] ?? -1);
-    
-        out.push({ building: bld, room, day, start, end });
-      });
-    
-      return out;                 // ← an array now
+
+    const data: timeSpace | null = await resultFrame2.evaluate((map) => {
+      const td = document.querySelector('td.BlackInput.no_dbg_border_r');
+      if (!td) return null;               // ← changed: just skip
+
+      const txt = td.textContent || '';
+      const day  = map[ (txt.match(/יום [א-ז]/)?.[0] || '') ] ?? -1;
+      const t    = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+      const start= t ? parseInt(t[1]+t[2]) : -1;
+      const end  = t ? parseInt(t[3]+t[4]) : -1;
+      const bld  = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
+      const room = +(txt.match(/חדר\s*(\d+)/)?.[1] ?? -1);
+
+      return { building: bld, room, day, start, end };
     }, hebrewDayMap);
-    
-    rows.forEach(r => {
-      if (!r) return;                               // null-guard (not expected now)
-      const missing = Object.values(r).some(v => v === -1);
-      if (missing) {
-        console.log('⏭  Skipped – some field missing', r);
-      } else {
-        results.push(r);
-        console.log('✅ Saved:', r);
+
+    if (data) {
+      const hasInvalidField = Object.values(data).includes(-1);
+      if (!hasInvalidField) {
+        results.push(data);
+        console.log('✅ Scraped:', data);
       }
-    });
-  
+    } else {
+      console.log('ℹ️ Skipped course – no schedule cell');
+    }
+
     await resultFrame2.evaluate(() => window.history.back());
 
     // Wait for the frame to reappear and reload fully
@@ -233,7 +222,7 @@ async function run() {
     }
 
     if (!frame) {
-      console.error('X Failed to reload frame after going back');
+      console.error('❌ Failed to reload frame after going back');
       break;
     }
     i++;
@@ -243,7 +232,7 @@ async function run() {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   const outputPath = path.join(dir, `semester_${semester}.json`);
   fs.writeFileSync(outputPath, JSON.stringify(results, null, 2), 'utf-8');
-  console.log(`Saved ${results.length} entries to ${outputPath}`);
+  console.log(`💾 Saved ${results.length} entries to ${outputPath}`);
 
   await browser.close();
 }
