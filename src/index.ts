@@ -191,10 +191,18 @@ async function run() {
     }, hebrewDayMap);
     
     if (data) {
-      results.push(data);
-      console.log('✅ Scraped:', data);
-    } else {
-      console.log('ℹ️ Skipped course – no schedule cell');
+      const hasMissing = Object.values(data).some(v => v === -1);
+      if(hasMissing){
+        console.log('I Skipped course, missing fields');
+      }
+      else{
+        results.push(data);
+        console.log('V Scraped:', data);
+      }
+
+    } 
+    else {
+      console.log('I Skipped course – no schedule cell');
     }
   
     await resultFrame2.evaluate(() => window.history.back());
@@ -219,7 +227,7 @@ async function run() {
     }
 
     if (!frame) {
-      console.error('❌ Failed to reload frame after going back');
+      console.error('X Failed to reload frame after going back');
       break;
     }
     i++;
