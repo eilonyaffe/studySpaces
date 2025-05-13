@@ -20,6 +20,7 @@
         "axios-retry": "^4.5.0",
         "better-sqlite3": "^11.10.0",
         "cheerio": "^1.0.0",
+        "moment": "^2.30.1",
         "puppeteer": "^24.8.2",
         "ramda": "^0.30.1",
         "scrapfly-sdk": "^0.6.9",
