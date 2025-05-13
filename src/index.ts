@@ -42,6 +42,14 @@ async function run() {
     return;
   }
 
+  const countStr = await askQuestion('how many courses to scrape: ');
+  const countNum = Number(countStr);
+
+  if (isNaN(countNum) || countNum <= 0 || !Number.isInteger(countNum)) {
+    console.error('Invalid number of courses. Please enter a positive integer.');
+    return;
+  }
+
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
 
@@ -133,7 +141,7 @@ async function run() {
   let i = 0;
   const total = courseLinks.length;
 
-  while (i < total) {
+  while (i < total && i < countNum) {
     frame = page.frames().find(f => f.name() === 'main');
     if (!frame) break;
 
@@ -228,7 +236,7 @@ async function run() {
     i++;
   }
 
-  const dir = path.join('data');
+  const dir = path.join('data/full');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   const outputPath = path.join(dir, `semester_${semester}.json`);
   fs.writeFileSync(outputPath, JSON.stringify(results, null, 2), 'utf-8');
