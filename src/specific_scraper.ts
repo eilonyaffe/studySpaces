@@ -15,6 +15,7 @@ console.log(`auto-detected the semester as: ${semester}`);
 
 
 async function run() {
+
     const dayStr:string = await askQuestion('enter day number (1 to 6):');
     const dayNum:number = Number(dayStr);
   
@@ -33,10 +34,14 @@ async function run() {
       return;
     }
 
-    let startTimeNum:number = timeNum - 4;
+    console.log("accuracy determines how large the interval before and after the entered time is.");
+    const accuracyStr:string = await askQuestion('enter wanted accuracy (exact, low, medium, high):');
+    const accuracyNum:number = (accuracyStr == "high") ? 4 : (accuracyStr == "medium") ? 3 : (accuracyStr == "low") ? 2 : 0 ;
+
+    let startTimeNum:number = timeNum - accuracyNum;
     startTimeNum = (startTimeNum < 0) ? 0 : startTimeNum; //if the start time is very early
 
-    let EndTimeNum:number = timeNum + 4;
+    let EndTimeNum:number = (accuracyNum == 0) ? (timeNum + 2) : timeNum + accuracyNum;
     EndTimeNum = (EndTimeNum >= 23) ? 23 : EndTimeNum; //if the start time is very late
 
     const stdStartTime:string = hourTo24hString(startTimeNum);
