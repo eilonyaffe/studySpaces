@@ -9,14 +9,7 @@ const currentDate: moment.Moment = moment();
 const fullTime:string = currentDate.format('DD-MM-YYYY')  // used to save a file under data/user_queries/ by date and time
 
 
-async function run() {
-
-
-    const semester = await askQuestion('Enter semester (1, 2, or 3): ');
-    if (!['1', '2', '3'].includes(semester)) {
-      console.error('Invalid semester value. Please enter 1, 2, or 3.');
-      return;
-    }
+async function run(semester: string, progressPath: string): Promise<boolean> {
 
     const dir = path.join('data/full');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -24,6 +17,7 @@ async function run() {
     const outputPath = path.join(dir, `semester_${semester}_${fullTime}.json`);
     const fileStream = fs.createWriteStream(outputPath, { flags: 'w', encoding: 'utf-8' });
     fileStream.write('[\n');  // Start of JSON array
+
   
     let firstWrite = true;
 
@@ -40,7 +34,7 @@ async function run() {
     if (!frame) {
       console.error('Main frame not found');
       await browser.close();
-      return;
+      return false;
     }
 
     const handle = await frame.evaluateHandle(() => {
@@ -56,7 +50,7 @@ async function run() {
     } else {
         console.log("X Could not find 'advanced search'");
         await browser.close();
-        return;
+        return false;
     }
 
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -65,7 +59,7 @@ async function run() {
     if (!frame) {
         console.error('Search frame not found after click');
         await browser.close();
-        return;
+        return false;
     }
 
     // entering * to get all relevant courses
@@ -78,7 +72,7 @@ async function run() {
     } else {
         console.log("Could not find course name input field");
         await browser.close();
-        return;
+        return false;
     }
 
     const semesterDropdown = await frame.$('#on_semester') as ElementHandle<HTMLSelectElement> | null;
@@ -88,7 +82,7 @@ async function run() {
     } else {
       console.log("Could not find semester dropdown");
       await browser.close();
-      return;
+      return false;
     }
     
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -108,7 +102,7 @@ async function run() {
       if (!frame) {
         console.error('Main frame not found after search');
         await browser.close();
-        return;
+        return false;
       }
     
       const courseLinks = await frame.$$eval('a', anchors =>
@@ -116,12 +110,20 @@ async function run() {
           .filter(a => a.href.includes("javascript:goCourseSemester"))
           .map(a => a.getAttribute('href'))
       );
-    
-      const results: timeSpace[] = [];
-    
+        
       let i = 0;
       const total = courseLinks.length;
-    
+      
+      if (fs.existsSync(progressPath)) {
+        const savedIndex = parseInt(fs.readFileSync(progressPath, 'utf-8'), 10);
+        if (!isNaN(savedIndex) && savedIndex >= 0 && savedIndex < total) {
+          i = savedIndex;
+          console.log(`🔁 Resuming from course ${i + 1}`);
+        } else {
+          console.log('🔁 Starting from scratch');
+        }
+      }
+
       while (i < total) {
         frame = page.frames().find(f => f.name() === 'main');
         if (!frame) break;
@@ -204,6 +206,7 @@ async function run() {
           for (const item of scheduleItems) {
               if (!firstWrite) fileStream.write(',\n');
               fileStream.write(JSON.stringify(item, null, 2));
+              fs.writeFileSync(progressPath, `${i + 1}`, 'utf-8');
               firstWrite = false;
           }
           console.log(`✅ Scraped ${scheduleItems.length}`);
@@ -217,25 +220,27 @@ async function run() {
         // Wait for the frame to reappear and reload fully
         let retries = 0;
         while (retries < 10) {
-          frame = page.frames().find(f => f.name() === 'main');
-          if (frame) {
-            try {
-              await frame.waitForFunction(() => {
-                return Array.from(document.querySelectorAll('a'))
-                      .some(a => a.href.includes("javascript:goCourseSemester"));
-              }, { timeout: 3000 });
-              break;  // success!
-            } catch {
-              // retry
-            }
-          }
           await new Promise(resolve => setTimeout(resolve, 2000));
-          retries++;
+        
+          frame = page.frames().find(f => f.name() === 'main');
+          if (!frame) continue;
+        
+          try {
+            // Wait until the course list reappears
+            await frame.waitForFunction(() =>
+              Array.from(document.querySelectorAll('a'))
+                .some(a => a.href.includes("javascript:goCourseSemester")),
+              { timeout: 3000 }
+            );
+            break;  // success
+          } catch {
+            retries++;
+          }
         }
-    
+        
         if (!frame) {
           console.error('❌ Failed to reload frame after going back');
-          break;
+          return false;
         }
         i++;
       }
@@ -245,6 +250,31 @@ async function run() {
       console.log(`💾 Appended output saved to ${outputPath}`);
     
       await browser.close();
+      if (i < total) {
+        console.log(`⚠️ Incomplete scrape: ${i}/${total}. Run again to resume.`);
+        return false;
+      } 
+      else {
+        console.log('🎉 Scrape complete. Deleting progress file.');
+        fs.writeFileSync(progressPath, `-1`, 'utf-8');
+        return true;
+      }
 }
 
-run();
+async function startWithAutoRetry() {
+  const semester = await askQuestion('Enter semester (1, 2, or 3): ');
+  if (!['1', '2', '3'].includes(semester)) {
+    console.error('Invalid semester value. Please enter 1, 2, or 3.');
+    return;
+  }
+
+  const progressPath = path.join('data/full', `semester_${semester}.txt`);
+
+  while (true) {
+    const completed = await run(semester, progressPath);
+    if (completed) break;
+    console.log('🔁 Retrying due to incomplete scrape...');
+  }
+}
+
+startWithAutoRetry();
