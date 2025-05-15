@@ -11,15 +11,32 @@ const fullTime:string = currentDate.format('DD-MM-YYYY')  // used to save a file
 
 async function run(semester: string, progressPath: string): Promise<boolean> {
 
-    const dir = path.join('data/full');
+    const dir = path.join('data/full', `semester_${semester}`);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  
-    const outputPath = path.join(dir, `semester_${semester}_${fullTime}.json`);
-    const fileStream = fs.createWriteStream(outputPath, { flags: 'w', encoding: 'utf-8' });
-    fileStream.write('[\n');  // Start of JSON array
 
-  
+    const outputPath = path.join(dir, `${fullTime}.json`);
+    let fileStream: fs.WriteStream;
     let firstWrite = true;
+
+    if (fs.existsSync(outputPath)) {
+        // File already exists — reopen for appending
+        let contents = fs.readFileSync(outputPath, 'utf-8').trim();
+
+        if (contents.endsWith("]")) {
+            contents = contents.slice(0, -1).trim();  // Remove closing ]
+            fs.writeFileSync(outputPath, contents, 'utf-8');
+        }
+
+        // Check if we need to add a comma before appending
+        firstWrite = !contents.includes("{");  // crude check for whether there are objects
+        fileStream = fs.createWriteStream(outputPath, { flags: 'a', encoding: 'utf-8' });
+        if (!firstWrite) fileStream.write(',\n');
+    } 
+    else {
+        // First time creating this file
+        fileStream = fs.createWriteStream(outputPath, { flags: 'w', encoding: 'utf-8' });
+        fileStream.write('[\n');
+    }
 
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
@@ -137,9 +154,12 @@ async function run(semester: string, progressPath: string): Promise<boolean> {
     
         const href = hrefs[i];
         if (!href) {
-          console.log(`X Skipping missing link at index ${i}`);
-          i++;
-          continue;
+          console.log(`X Missing link at index ${i} — restarting run from same index`);
+          fs.writeFileSync(progressPath, `${i}`, 'utf-8');
+          if (browser) await browser.close();
+          fileStream.write('\n]\n');
+          fileStream.end();
+          return await run(semester, progressPath);
         }
     
         console.log(`➡ Visiting course ${i + 1}/${total}`);
