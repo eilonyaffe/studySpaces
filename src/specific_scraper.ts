@@ -215,8 +215,8 @@ async function run() {
           continue;
         }
     
-        const scheduleItems: timeSpace[] = await resultFrame2.evaluate((map) => {
-            const seen = new Set<string>();
+        const scheduleItems: timeSpace[] = await resultFrame2.evaluate((map, userStart, userEnd, userDay) => {
+          const seen = new Set<string>();
             const output: timeSpace[] = [];
           
             // every table row on the page
@@ -229,17 +229,23 @@ async function run() {
               if (!/יום [א-ז]/.test(txt) || !/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/.test(txt))
                 continue;
           
-              const day   = map[txt.match(/יום [א-ז]/)![0]] ?? -1;
-              const t     = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/)!;
-              const start = parseInt(t[1] + t[2]);        // e.g. "13:00" → 1300
-              const end   = parseInt(t[3] + t[4]);
-              const bld   = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
-              const room  = +(txt.match(/חדר\s*(\d+)/)?.[1] ?? -1);
+              const day:number = map[txt.match(/יום [א-ז]/)![0]] ?? -1;
+              
+              if (day !== userDay) continue;
+
+              const t = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/)!;
+              const start:number = parseInt(t[1] + t[2]);        // e.g. "13:00" → 1300
+              const end:number = parseInt(t[3] + t[4]);
+
+              if (start < userStart || start > userEnd) continue;
+
+              const bld:number = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
+              const room:number = +(txt.match(/חדר\s*(-?\d+)/)?.[1] ?? -1);
           
               const item: any = { building: bld, room, day, start, end };
               if (Object.values(item).includes(-1)) continue;      // reject partial rows
           
-              const key = JSON.stringify(item);                    // de-dup
+              const key:string = JSON.stringify(item);                    // de-dup
               if (!seen.has(key)) {
                 seen.add(key);
                 output.push(item);
@@ -247,7 +253,7 @@ async function run() {
             }
           
             return output;
-        }, hebrewDayMap);
+          }, hebrewDayMap, startTimeNum * 100, EndTimeNum * 100, dayNum);
     
         if (scheduleItems.length > 0) {
             results.push(...scheduleItems);
