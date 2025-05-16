@@ -11,6 +11,8 @@ const fullTime:string = currentDate.format('DD-MM-YYYY')  // used to save a file
 
 async function run(semester: string, progressPath: string): Promise<boolean> {
 
+  try {
+
     const dir = path.join('data/full', `semester_${semester}`);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
@@ -279,6 +281,11 @@ async function run(semester: string, progressPath: string): Promise<boolean> {
         fs.writeFileSync(progressPath, `-1`, 'utf-8');
         return true;
       }
+    }
+    catch(err){
+      console.error('❌ Unexpected error during run():', err);
+      return false;
+    }
 }
 
 async function startWithAutoRetry() {
