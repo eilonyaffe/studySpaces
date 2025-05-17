@@ -295,7 +295,7 @@ async function startWithAutoRetry() {
     return;
   }
 
-  const progressPath = path.join('data/full', `semester_${semester}.txt`);
+  const progressPath = path.join('data/full/progress_counters', `semester_${semester}.txt`);
 
   while (true) {
     const completed = await run(semester, progressPath);
