@@ -15,7 +15,7 @@ console.log(`auto-detected the semester as: ${semester}`);
 
 let totalToScrape:number = -1; //starting value, indicates that wasn't changed yet in run
 
-async function run(dayString:string, stdStartTime:string, stdEndTime:string, dayNum:number, startTimeNum:number, EndTimeNum:number, trueStrtTime: number): Promise<boolean> {
+async function run(dayString:string, stdStartTime:string, stdEndTime:string, dayNum:number, startTimeNum:number, EndTimeNum:number): Promise<boolean> {
     //start browser
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
@@ -213,7 +213,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         }
         let scheduleItems: timeSpace[] = [];
         try {
-          scheduleItems = await resultFrame2.evaluate((map, userDay, trueStrtTime) => {
+          scheduleItems = await resultFrame2.evaluate((map, userDay, startTimeNum, EndTimeNum) => {
             const seen = new Set<string>();
               const output: timeSpace[] = [];
             
@@ -235,7 +235,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
                 const start:number = parseInt(t[1] + t[2]);        // e.g. "13:00" → 1300
                 const end:number = parseInt(t[3] + t[4]);
   
-                if (end <= trueStrtTime) continue;
+                if (end <= startTimeNum || start >= EndTimeNum) continue;
   
                 const bld:number = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
                 const room:number = +(txt.match(/חדר\s*(-?\d+)/)?.[1] ?? -1);
@@ -251,7 +251,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
               }
             
               return output;
-            }, hebrewDayMap, dayNum, trueStrtTime * 100);
+            }, hebrewDayMap, dayNum, startTimeNum, EndTimeNum);
         } catch (err){
           console.error("❌ Failed to extract schedule from course detail page:", err);
           continue;
@@ -319,30 +319,34 @@ async function startWithAutoRetry() {
   const dayElement:string = "on_day" + dayStr ;
 
   //choose starting hour
-  const timeStr:string = await askQuestion('enter starting hour (0 to 23):');
-  const timeNum:number = Number(timeStr);
-  if (isNaN(timeNum) || timeNum < 0 || timeNum >= 24 || !Number.isInteger(timeNum)) {
+  const timeStartStr:string = await askQuestion('enter starting hour (0 to 23):');
+  const timeStartNum:number = Number(timeStartStr);
+  if (isNaN(timeStartNum) || timeStartNum < 0 || timeStartNum >= 24 || !Number.isInteger(timeStartNum)) {
     console.error('Invalid hour');
     startWithAutoRetry();
   }
 
-  //choose accuracy hour
-  console.log("accuracy determines how large the interval before and after the entered time is.");
-  const accuracyStr:string = await askQuestion('enter wanted accuracy (exact, low, medium, high):');
-  const accuracyNum:number = (accuracyStr == "high") ? 4 : (accuracyStr == "medium") ? 3 : (accuracyStr == "low") ? 2 : 0 ;
+  //choose ending hour
+  const timeEndStr:string = await askQuestion('enter ending hour (0 to 23):');
+  const timeEndNum:number = Number(timeEndStr);
+  if (isNaN(timeEndNum) || timeEndNum < 0 || timeEndNum >= 24 || !Number.isInteger(timeEndNum) || timeEndNum <= timeStartNum) {
+    console.error('Invalid hour or hours range');
+    startWithAutoRetry();
+  }
 
-  let startTimeNum:number = timeNum - accuracyNum;
-  startTimeNum = (startTimeNum < 0) ? 0 : startTimeNum; //if the start time is very early
 
-  let EndTimeNum:number = (accuracyNum == 0) ? (timeNum + 2) : timeNum + accuracyNum;
-  EndTimeNum = (EndTimeNum >= 23) ? 23 : EndTimeNum; //if the start time is very late
+  const accuracy:string = await askQuestion('enter accuracy(low or high ):');
+  const accuracy_range:number = (accuracy == "high") ? 4 : 2 ;
 
-  const stdStartTime:string = hourTo24hString(startTimeNum);
-  const stdEndTime:string = hourTo24hString(EndTimeNum);
+  const startTimeRanged:number = (timeStartNum - accuracy_range < 0) ? 0 : (timeStartNum - accuracy_range);
+  const endTimeRanged:number = (timeEndNum + accuracy_range > 23) ? 23 : (timeEndNum + accuracy_range);
+
+  const stdStartTime:string = hourTo24hString(startTimeRanged);
+  const stdEndTime:string = hourTo24hString(endTimeRanged);
 
 
   while (true) {
-    const completed = await run(dayElement, stdStartTime, stdEndTime, dayNum, startTimeNum, EndTimeNum, timeNum);
+    const completed = await run(dayElement, stdStartTime, stdEndTime, dayNum, timeStartNum * 100, timeEndNum * 100);
     if (completed) break;
   }
 }
