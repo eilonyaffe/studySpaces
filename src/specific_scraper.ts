@@ -14,6 +14,7 @@ let semester:number = (month==0 || month<=11 && month>=9) ? 1 :   (month<=5 && m
 console.log(`auto-detected the semester as: ${semester}`);
 
 let totalToScrape:number = -1; //starting value, indicates that wasn't changed yet in run
+let alertDetected = false;
 
 async function run(dayString:string, stdStartTime:string, stdEndTime:string, dayNum:number, startTimeNum:number, EndTimeNum:number): Promise<boolean> {
     //start browser
@@ -24,15 +25,28 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
       const message = dialog.message();
       if (message.includes('הקורס אינו קיים') || message.includes('לא נמצאו קורסים')) {
         console.warn('⚠️ Alert detected: No matching courses.');
+        alertDetected = true;
         await dialog.accept();
-        await browser.close();
-        process.exit(0);
       }
     });
-  
-    await page.goto('https://bgu4u.bgu.ac.il/pls/scwp/!app.gate?app=ann', {
-      waitUntil: 'domcontentloaded',
-    });
+
+    await new Promise(resolve => setTimeout(resolve, 1500));  // let dialog resolve
+
+    if (alertDetected) {
+      await browser.close();
+      return true;
+    }
+    
+    try{
+      await page.goto('https://bgu4u.bgu.ac.il/pls/scwp/!app.gate?app=ann', {
+        waitUntil: 'domcontentloaded',
+      });
+    }
+    catch (err){
+      console.error("❌ Error loading the URL:", err);
+      await browser.close();
+      return false;
+    }
   
     await new Promise(resolve => setTimeout(resolve, 2000));
   
@@ -130,10 +144,20 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
     // choosing the correct day
     const dayHandle = await frame.$(`#${dayString}`) as ElementHandle<HTMLSelectElement> | null;
     if (dayHandle) {
+      try{
         await dayHandle.click();
         console.log(`✅ Clicked day element '${dayString}'`);
+      }
+      catch (err){
+        console.error("❌ Failed to click 'day element':", err);
+        await browser.close();
+        return false;
+      }
+
     } else {
-    console.warn(`⚠️ Could not find element with id '${dayString}'`);
+      console.warn(`⚠️ Could not find element with id '${dayString}'`);
+      await browser.close();
+      return false;
     }
     
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -141,10 +165,19 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
     // hit search button
     const searchBtn = await frame.$('#GOPAGE2') as ElementHandle<HTMLElement> | null;
       if (searchBtn) {
-        await searchBtn.click();
-        console.log("Clicked 'search' button");
+        try{
+          await searchBtn.click();
+          console.log("Clicked 'search' button");
+        }
+        catch (err){
+          console.error("❌ Failed to click 'search':", err);
+          await browser.close();
+          return false;
+        }
       } else {
         console.log("Could not find 'search' button");
+        await browser.close();
+        return false;
       }
     
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -156,6 +189,8 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         return false;
       }
     
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       const courseLinks = await frame.$$eval('a', anchors => //calulate the number of courses needed to scrape
         anchors
           .filter(a => a.href.includes("javascript:goCourseSemester"))
@@ -164,6 +199,8 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
       const total = courseLinks.length;
       console.log(`🔍 Found ${total} courses to check`);
       if (total == 0){ // this is a problem. when there aren't any corresponding courses, there will be a browser flashing
+        console.log("Error loading the courses");
+        await browser.close();
         return false;
       }
       const results: timeSpace[] = [];
@@ -184,8 +221,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         const href = hrefs[i];
         if (!href) {
           console.log(`X Skipping missing link at index ${i}`);
-          i++;
-          continue;
+          return false;
         }
     
         console.log(`➡ Visiting course ${i + 1}/${total}`);
@@ -201,8 +237,14 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
           i++;
           continue;
         }
-    
-        await courseLink.click();
+        try{
+          await courseLink.click();
+        }
+        catch (err){
+          console.error("❌ Failed to click 'course link':", err);
+          await browser.close();
+          return false;
+        }
         await new Promise(resolve => setTimeout(resolve, 2000));
     
         const resultFrame2 = page.frames().find(f => f.name() === 'main');
@@ -263,8 +305,15 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         } else {
             console.log('ℹ️ Skipped course – no valid schedule entries found');
         }
-    
-        await resultFrame2.evaluate(() => window.history.back());
+        
+        try{
+          await resultFrame2.evaluate(() => window.history.back());
+        }
+        catch(err){
+          console.error("❌ Failed to go back:", err);
+          await browser.close();
+          return false;
+        }
     
         // Wait for the frame to reappear and reload fully
         let retries = 0;
