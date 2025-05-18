@@ -3,51 +3,47 @@ import puppeteer, { ElementHandle } from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
-import { timeSpace, hebrewDayMap, askQuestion, hourTo24hString } from './utils';
+import { timeSpace, hebrewDayMap, askQuestion, hourTo24hString, appendResultsToFile, initializeFile, finalizeFile } from './utils';
 
 const currentDate: moment.Moment = moment();
 const fullTime:string = currentDate.format('DD-MM-YYYY')  // used to save a file under data/user_queries/ by date and time
 
+let scraped:number = 0;
+let alertDetected = false;
 
-async function run(semester: string, progressPath: string): Promise<boolean> {
-
-  try {
-
-    const dir = path.join('data/full', `semester_${semester}`);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    const outputPath = path.join(dir, `${fullTime}.json`);
-    let fileStream: fs.WriteStream;
-    let firstWrite = true;
-
-    if (fs.existsSync(outputPath)) {
-        // File already exists — reopen for appending
-        let contents = fs.readFileSync(outputPath, 'utf-8').trim();
-
-        if (contents.endsWith("]")) {
-            contents = contents.slice(0, -1).trim();  // Remove closing ]
-            fs.writeFileSync(outputPath, contents, 'utf-8');
-        }
-
-        // Check if we need to add a comma before appending
-        firstWrite = !contents.includes("{");  // crude check for whether there are objects
-        fileStream = fs.createWriteStream(outputPath, { flags: 'a', encoding: 'utf-8' });
-        if (!firstWrite) fileStream.write(',\n');
-    } 
-    else {
-        // First time creating this file
-        fileStream = fs.createWriteStream(outputPath, { flags: 'w', encoding: 'utf-8' });
-        fileStream.write('[\n');
-    }
-
+async function run(semester:string, outputPath:string): Promise<boolean> {
+    //start browser
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
-  
-    await page.goto('https://bgu4u.bgu.ac.il/pls/scwp/!app.gate?app=ann', {
-      waitUntil: 'domcontentloaded',
+
+    page.on('dialog', async dialog => {
+      const message = dialog.message();
+      if (message.includes('הקורס אינו קיים') || message.includes('לא נמצאו קורסים')) {
+        console.warn('⚠️ Alert detected: No matching courses.');
+        alertDetected = true;
+        await dialog.accept();
+      }
     });
+
+    await new Promise(resolve => setTimeout(resolve, 1500));  // let dialog resolve
+
+    if (alertDetected) {
+      await browser.close();
+      return true;
+    }
+    
+    try{
+      await page.goto('https://bgu4u.bgu.ac.il/pls/scwp/!app.gate?app=ann', {
+        waitUntil: 'domcontentloaded',
+      });
+    }
+    catch (err){
+      console.error("❌ Error loading the URL:", err);
+      await browser.close();
+      return false;
+    }
   
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000)); // wait for the page to load
   
     let frame = page.frames().find(f => f.name() === 'main');
     if (!frame) {
@@ -56,23 +52,38 @@ async function run(semester: string, progressPath: string): Promise<boolean> {
       return false;
     }
 
-    const handle = await frame.evaluateHandle(() => {
+    //click extended search
+    let handle;
+    try{
+      handle = await frame.evaluateHandle(() => {
         const xpath = "//a[contains(text(), 'חיפוש מורחב')]";
         const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         return result.singleNodeValue as HTMLElement | null;
     });
+    } catch (err){
+      console.error("❌ Error finding 'advanced search' link:", err);
+      await browser.close();
+      return false;
+    }
     
     const elementHandle = handle.asElement() as ElementHandle<HTMLElement> | null;
     if (elementHandle) {
+      try{
         await elementHandle.click();
         console.log("V Clicked 'advanced search'");
+      }
+      catch (err){
+        console.error("❌ Failed to click 'advanced search':", err);
+        await browser.close();
+        return false;
+      }
     } else {
         console.log("X Could not find 'advanced search'");
         await browser.close();
         return false;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000)); // wait for advanced search page load
 
     frame = page.frames().find(f => f.name() === 'main');
     if (!frame) {
@@ -94,28 +105,38 @@ async function run(semester: string, progressPath: string): Promise<boolean> {
         return false;
     }
 
+    // entering the correct semester's number
     const semesterDropdown = await frame.$('#on_semester') as ElementHandle<HTMLSelectElement> | null;
     if (semesterDropdown) {
-      await semesterDropdown.select(semester);
-      console.log(`Selected semester '${semester}'`);
+        await semesterDropdown.select(semester.toString());
+        console.log(`Selected semester '${semester}'`);
     } else {
-      console.log("Could not find semester dropdown");
-      await browser.close();
-      return false;
+        console.log("Could not find semester dropdown");
+        await browser.close();
+        return false;
     }
     
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // hit search button
     const searchBtn = await frame.$('#GOPAGE2') as ElementHandle<HTMLElement> | null;
       if (searchBtn) {
-        await searchBtn.click();
-        console.log("Clicked 'search' button");
+        try{
+          await searchBtn.click();
+          console.log("Clicked 'search' button");
+        }
+        catch (err){
+          console.error("❌ Failed to click 'search':", err);
+          await browser.close();
+          return false;
+        }
       } else {
         console.log("Could not find 'search' button");
+        await browser.close();
+        return false;
       }
     
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     
       frame = page.frames().find(f => f.name() === 'main');
       if (!frame) {
@@ -124,26 +145,23 @@ async function run(semester: string, progressPath: string): Promise<boolean> {
         return false;
       }
     
-      const courseLinks = await frame.$$eval('a', anchors =>
+      await new Promise(resolve => setTimeout(resolve, 10000)); //must keep! ensures all course links load to correctly count courseLinks
+
+      const courseLinks = await frame.$$eval('a', anchors => //calulate the number of courses needed to scrape
         anchors
           .filter(a => a.href.includes("javascript:goCourseSemester"))
           .map(a => a.getAttribute('href'))
       );
-        
-      let i = 0;
       const total = courseLinks.length;
-      
-      if (fs.existsSync(progressPath)) {
-        const savedIndex = parseInt(fs.readFileSync(progressPath, 'utf-8'), 10);
-        if (!isNaN(savedIndex) && savedIndex >= 0 && savedIndex < total) {
-          i = savedIndex;
-          console.log(`🔁 Resuming from course ${i + 1}`);
-        } else {
-          console.log('🔁 Starting from scratch');
-        }
+      console.log(`🔍 Found ${total} courses to check`);
+      if (total == 0){ // this is a problem. when there aren't any corresponding courses, there will be a browser flashing
+        console.log("Error loading the courses");
+        await browser.close();
+        return false;
       }
-
-      while (i < total) {
+      initializeFile(outputPath);
+        
+      while (scraped < total) {
         frame = page.frames().find(f => f.name() === 'main');
         if (!frame) break;
     
@@ -154,154 +172,177 @@ async function run(semester: string, progressPath: string): Promise<boolean> {
             .map(a => a.getAttribute('href') || '')
         );
     
-        const href = hrefs[i];
+        const href = hrefs[scraped];
         if (!href) {
-          console.log(`X Missing link at index ${i} — restarting run from same index`);
-          fs.writeFileSync(progressPath, `${i}`, 'utf-8');
-          if (browser) await browser.close();
-          fileStream.write('\n]\n');
-          fileStream.end();
-          return await run(semester, progressPath);
+          console.log(`X Skipping missing link at index ${scraped}`);
+          browser.close();
+          return false;
         }
     
-        console.log(`➡ Visiting course ${i + 1}/${total}`);
-    
-        const handle = await frame.evaluateHandle((href) => {
-          const a = Array.from(document.querySelectorAll('a')) as HTMLAnchorElement[];
-          return a.find(el => el.getAttribute('href') === href) || null;
-        }, href);
-    
-        const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
-        if (!courseLink) {
-          console.log("X Could not find course link");
-          i++;
-          continue;
+        console.log(`➡ Visiting course ${scraped + 1}/${total}`);
+        
+        let handle;
+        try{
+          handle = await frame.evaluateHandle((href) => {
+            const a = Array.from(document.querySelectorAll('a')) as HTMLAnchorElement[];
+            return a.find(el => el.getAttribute('href') === href) || null;
+          }, href);
         }
-    
-        await courseLink.click();
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        catch (err){
+          console.error("Failed to enter course:", err);
+          await browser.close();
+          return false;
+        }
+        
+        if (handle!=null){
+          const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
+          if (!courseLink) {
+            console.log("X Could not find course link");
+            await browser.close();
+            return false;
+          }
+          try{
+            await courseLink.click();
+          }
+          catch (err){
+            console.error("❌ Failed to click 'course link':", err);
+            await browser.close();
+            return false;
+          }
+        }
+        else{
+          await browser.close();
+          return false;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
     
         const resultFrame2 = page.frames().find(f => f.name() === 'main');
         if (!resultFrame2) {
           console.log("X Missing course details frame");
-          i++;
+          await browser.close();
+          return false;
+        }
+        let scheduleItems: timeSpace[] = [];
+        try {
+          scheduleItems = await resultFrame2.evaluate((map) => {
+            const seen = new Set<string>();
+              const output: timeSpace[] = [];
+            
+              // every table row on the page
+              const rows = Array.from(document.querySelectorAll('tr'));
+            
+              for (const row of rows) {
+                const txt = row.textContent?.replace(/\s+/g, ' ').trim() || '';
+            
+                // only rows that look like a schedule line
+                if (!/יום [א-ז]/.test(txt) || !/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/.test(txt))
+                  continue;
+            
+                const day:number = map[txt.match(/יום [א-ז]/)![0]] ?? -1;
+                  
+                const t = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/)!;
+                const start:number = parseInt(t[1] + t[2]);        // e.g. "13:00" → 1300
+                const end:number = parseInt(t[3] + t[4]);
+    
+                const bld:number = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
+                const room:number = +(txt.match(/חדר\s*(-?\d+)/)?.[1] ?? -1);
+            
+                const item: any = { building: bld, room, day, start, end };
+                if (Object.values(item).includes(-1)) continue;      // reject partial rows
+            
+                const key:string = JSON.stringify(item);                    // de-dup
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  output.push(item);
+                }
+              }
+            
+              return output;
+            }, hebrewDayMap);
+        } catch (err){
+          console.error("❌ Failed to extract schedule from course detail page:", err);
           continue;
         }
     
-        const scheduleItems: timeSpace[] = await resultFrame2.evaluate((map) => {
-          const seen = new Set<string>();
-            const output: timeSpace[] = [];
-          
-            // every table row on the page
-            const rows = Array.from(document.querySelectorAll('tr'));
-          
-            for (const row of rows) {
-              const txt = row.textContent?.replace(/\s+/g, ' ').trim() || '';
-          
-              // only rows that look like a schedule line
-              if (!/יום [א-ז]/.test(txt) || !/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/.test(txt))
-                continue;
-          
-              const day:number = map[txt.match(/יום [א-ז]/)![0]] ?? -1;
-              
-              const t = txt.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/)!;
-              const start:number = parseInt(t[1] + t[2]);        // e.g. "13:00" → 1300
-              const end:number = parseInt(t[3] + t[4]);
-
-              const bld:number = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
-              const room:number = +(txt.match(/חדר\s*(-?\d+)/)?.[1] ?? -1);
-          
-              const item: any = { building: bld, room, day, start, end };
-              if (Object.values(item).includes(-1)) continue;      // reject partial rows
-          
-              const key:string = JSON.stringify(item);                    // de-dup
-              if (!seen.has(key)) {
-                seen.add(key);
-                output.push(item);
-              }
-            }
-          
-            return output;
-          }, hebrewDayMap);
-    
         if (scheduleItems.length > 0) {
-          for (const item of scheduleItems) {
-              if (!firstWrite) fileStream.write(',\n');
-              fileStream.write(JSON.stringify(item, null, 2));
-              fs.writeFileSync(progressPath, `${i + 1}`, 'utf-8');
-              firstWrite = false;
-          }
-          console.log(`✅ Scraped ${scheduleItems.length}`);
-        } 
-        else {
+          appendResultsToFile(outputPath, scheduleItems);
+          console.log(`✅ Scraped ${scheduleItems.length} schedule(s):`, scheduleItems);
+        } else {
             console.log('ℹ️ Skipped course – no valid schedule entries found');
         }
-    
-        await resultFrame2.evaluate(() => window.history.back());
+        
+        try{
+          await resultFrame2.evaluate(() => window.history.back());
+        }
+        catch(err){
+          console.error("❌ Failed to go back:", err);
+          await browser.close();
+          return false;
+        }
     
         // Wait for the frame to reappear and reload fully
         let retries = 0;
         while (retries < 10) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        
           frame = page.frames().find(f => f.name() === 'main');
-          if (!frame) continue;
-        
-          try {
-            // Wait until the course list reappears
-            await frame.waitForFunction(() =>
-              Array.from(document.querySelectorAll('a'))
-                .some(a => a.href.includes("javascript:goCourseSemester")),
-              { timeout: 3000 }
-            );
-            break;  // success
-          } catch {
-            retries++;
+          if (frame) {
+            try {
+              await frame.waitForFunction(() => {
+                return Array.from(document.querySelectorAll('a'))
+                      .some(a => a.href.includes("javascript:goCourseSemester"));
+              }, { timeout: 2000 });
+              break;  // success!
+            } catch {
+              // retry
+            }
           }
+          await new Promise(resolve => setTimeout(resolve, 500));
+          retries++;
         }
-        
+    
         if (!frame) {
           console.error('❌ Failed to reload frame after going back');
-          return false;
+          break;
         }
-        i++;
-      }
-    
-      fileStream.write('\n]\n');  // Close JSON array
-      fileStream.end();
-      console.log(`💾 Appended output saved to ${outputPath}`);
+        scraped++;
+      } //went through all courses
     
       await browser.close();
-      if (i < total) {
-        console.log(`⚠️ Incomplete scrape: ${i}/${total}. Run again to resume.`);
-        return false;
-      } 
-      else {
-        console.log('🎉 Scrape complete. Deleting progress file.');
-        fs.writeFileSync(progressPath, `-1`, 'utf-8');
-        return true;
-      }
-    }
-    catch(err){
-      console.error('❌ Unexpected error during run():', err);
-      return false;
-    }
+      return true;
 }
 
+
 async function startWithAutoRetry() {
-  const semester = await askQuestion('Enter semester (1, 2, or 3): ');
-  if (!['1', '2', '3'].includes(semester)) {
-    console.error('Invalid semester value. Please enter 1, 2, or 3.');
-    return;
+
+  //choose day
+  const semester:string = await askQuestion('enter semester number (1, 2, 3):');
+  if (!['1','2','3'].includes(semester)) {
+    console.error('Invalid number');
+    return startWithAutoRetry();
   }
 
-  const progressPath = path.join('data/full/progress_counters', `semester_${semester}.txt`);
+  const dir = path.join(`data/full/semester_${semester}`);
+  const outputPath = path.join(dir, `${fullTime}.json`);
 
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  if (fs.existsSync(outputPath)) {
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    const matches = content.match(/^\[\s*((?:\{[\s\S]*?\},\s*)*)/);
+    if (matches && matches[1]) {
+      const count = (matches[1].match(/\{.*?\}/g) || []).length;
+      scraped = count;
+      console.log(`⏩ Resuming from scraped = ${scraped}`);
+    }
+  }
+  
   while (true) {
-    const completed = await run(semester, progressPath);
+    const completed = await run(semester, outputPath);
     if (completed) break;
-    console.log('🔁 Retrying due to incomplete scrape...');
   }
+  finalizeFile(outputPath);
 }
 
 startWithAutoRetry();

@@ -219,6 +219,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         const href = hrefs[scraped];
         if (!href) {
           console.log(`X Skipping missing link at index ${scraped}`);
+          browser.close();
           return false;
         }
     
@@ -241,6 +242,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
           const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
           if (!courseLink) {
             console.log("X Could not find course link");
+            await browser.close();
             return false;
           }
           try{
@@ -253,6 +255,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
           }
         }
         else{
+          await browser.close();
           return false;
         }
 
@@ -261,6 +264,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         const resultFrame2 = page.frames().find(f => f.name() === 'main');
         if (!resultFrame2) {
           console.log("X Missing course details frame");
+          await browser.close();
           return false;
         }
         let scheduleItems: timeSpace[] = [];
