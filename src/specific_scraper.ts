@@ -3,7 +3,7 @@ import puppeteer, { ElementHandle } from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
-import { timeSpace, hebrewDayMap, askQuestion, hourTo24hString } from './utils';
+import { timeSpace, hebrewDayMap, askQuestion, hourTo24hString, appendResultsToFile, initializeFile, finalizeFile } from './utils';
 
 const currentDate: moment.Moment = moment();
 const fullTime:string = currentDate.format('DD-MM-YYYY_HH-mm-ss')  // used to save a file under data/user_queries/ by date and time
@@ -13,10 +13,10 @@ const month:number = currentDate.month();
 let semester:number = (month==0 || month<=11 && month>=9) ? 1 :   (month<=5 && month>=2) ? 2 : (month<=8 && month>=6) ?  3 : -1;
 console.log(`auto-detected the semester as: ${semester}`);
 
-let totalToScrape:number = -1; //starting value, indicates that wasn't changed yet in run
+let scraped:number = 0;
 let alertDetected = false;
 
-async function run(dayString:string, stdStartTime:string, stdEndTime:string, dayNum:number, startTimeNum:number, EndTimeNum:number): Promise<boolean> {
+async function run(dayString:string, stdStartTime:string, stdEndTime:string, dayNum:number, startTimeNum:number, EndTimeNum:number, outputPath:string): Promise<boolean> {
     //start browser
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
@@ -203,11 +203,9 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         await browser.close();
         return false;
       }
-      const results: timeSpace[] = [];
-    
-      let i = 0;
-    
-      while (i < total) {
+      initializeFile(outputPath);
+        
+      while (scraped < total) {
         frame = page.frames().find(f => f.name() === 'main');
         if (!frame) break;
     
@@ -218,13 +216,13 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
             .map(a => a.getAttribute('href') || '')
         );
     
-        const href = hrefs[i];
+        const href = hrefs[scraped];
         if (!href) {
-          console.log(`X Skipping missing link at index ${i}`);
+          console.log(`X Skipping missing link at index ${scraped}`);
           return false;
         }
     
-        console.log(`➡ Visiting course ${i + 1}/${total}`);
+        console.log(`➡ Visiting course ${scraped + 1}/${total}`);
         
         let handle;
         try{
@@ -243,8 +241,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
           const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
           if (!courseLink) {
             console.log("X Could not find course link");
-            i++;
-            continue;
+            return false;
           }
           try{
             await courseLink.click();
@@ -264,8 +261,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         const resultFrame2 = page.frames().find(f => f.name() === 'main');
         if (!resultFrame2) {
           console.log("X Missing course details frame");
-          i++;
-          continue;
+          return false;
         }
         let scheduleItems: timeSpace[] = [];
         try {
@@ -314,8 +310,8 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         }
     
         if (scheduleItems.length > 0) {
-            results.push(...scheduleItems);
-            console.log(`✅ Scraped ${scheduleItems.length} schedule(s):`, scheduleItems);
+          appendResultsToFile(outputPath, scheduleItems);
+          console.log(`✅ Scraped ${scheduleItems.length} schedule(s):`, scheduleItems);
         } else {
             console.log('ℹ️ Skipped course – no valid schedule entries found');
         }
@@ -352,18 +348,8 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
           console.error('❌ Failed to reload frame after going back');
           break;
         }
-        i++;
+        scraped++;
       } //went through all courses
-    
-      const dir = path.join('data/user_queries');
-      const outputPath = path.join(dir, `${fullTime}.json`);
-
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-
-      fs.writeFileSync(outputPath, JSON.stringify(results, null, 2), 'utf-8');
-      console.log(`💾 Saved ${results.length} entries to ${outputPath}`);
     
       await browser.close();
       return true;
@@ -407,11 +393,28 @@ async function startWithAutoRetry() {
   const stdStartTime:string = hourTo24hString(startTimeRanged);
   const stdEndTime:string = hourTo24hString(endTimeRanged);
 
+  const dir = path.join('data/user_queries');
+  const outputPath = path.join(dir, `${fullTime}.json`);
 
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  if (fs.existsSync(outputPath)) {
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    const matches = content.match(/^\[\s*((?:\{[\s\S]*?\},\s*)*)/);
+    if (matches && matches[1]) {
+      const count = (matches[1].match(/\{.*?\}/g) || []).length;
+      scraped = count;
+      console.log(`⏩ Resuming from scraped = ${scraped}`);
+    }
+  }
+  
   while (true) {
-    const completed = await run(dayElement, stdStartTime, stdEndTime, dayNum, timeStartNum * 100, timeEndNum * 100);
+    const completed = await run(dayElement, stdStartTime, stdEndTime, dayNum, timeStartNum * 100, timeEndNum * 100, outputPath);
     if (completed) break;
   }
+  finalizeFile(outputPath);
 }
 
 startWithAutoRetry();
