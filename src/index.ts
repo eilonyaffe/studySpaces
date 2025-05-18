@@ -3,7 +3,7 @@ import puppeteer, { ElementHandle } from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
-import { timeSpace, hebrewDayMap, askQuestion, hourTo24hString, appendResultsToFile, initializeFile, finalizeFile } from './utils';
+import { timeSpace, hebrewDayMap, askQuestion, appendResultsToFile, initializeFile, finalizeFile } from './utils';
 
 const currentDate: moment.Moment = moment();
 const fullTime:string = currentDate.format('DD-MM-YYYY')  // used to save a file under data/user_queries/ by date and time
