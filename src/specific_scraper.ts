@@ -48,7 +48,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
       return false;
     }
   
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000)); // wait for the page to load
   
     let frame = page.frames().find(f => f.name() === 'main');
     if (!frame) {
@@ -88,7 +88,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         return false;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000)); // wait for advanced search page load
 
     frame = page.frames().find(f => f.name() === 'main');
     if (!frame) {
@@ -160,7 +160,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
       return false;
     }
     
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // hit search button
     const searchBtn = await frame.$('#GOPAGE2') as ElementHandle<HTMLElement> | null;
@@ -189,7 +189,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         return false;
       }
     
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 2000)); //must keep! ensures all course links load to correctly count courseLinks
 
       const courseLinks = await frame.$$eval('a', anchors => //calulate the number of courses needed to scrape
         anchors
@@ -225,27 +225,41 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         }
     
         console.log(`➡ Visiting course ${i + 1}/${total}`);
-    
-        const handle = await frame.evaluateHandle((href) => {
-          const a = Array.from(document.querySelectorAll('a')) as HTMLAnchorElement[];
-          return a.find(el => el.getAttribute('href') === href) || null;
-        }, href);
-    
-        const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
-        if (!courseLink) {
-          console.log("X Could not find course link");
-          i++;
-          continue;
-        }
+        
+        let handle;
         try{
-          await courseLink.click();
+          handle = await frame.evaluateHandle((href) => {
+            const a = Array.from(document.querySelectorAll('a')) as HTMLAnchorElement[];
+            return a.find(el => el.getAttribute('href') === href) || null;
+          }, href);
         }
         catch (err){
-          console.error("❌ Failed to click 'course link':", err);
+          console.error("Failed to enter course:", err);
           await browser.close();
           return false;
         }
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        if (handle!=null){
+          const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
+          if (!courseLink) {
+            console.log("X Could not find course link");
+            i++;
+            continue;
+          }
+          try{
+            await courseLink.click();
+          }
+          catch (err){
+            console.error("❌ Failed to click 'course link':", err);
+            await browser.close();
+            return false;
+          }
+        }
+        else{
+          return false;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
     
         const resultFrame2 = page.frames().find(f => f.name() === 'main');
         if (!resultFrame2) {
@@ -324,13 +338,13 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
               await frame.waitForFunction(() => {
                 return Array.from(document.querySelectorAll('a'))
                       .some(a => a.href.includes("javascript:goCourseSemester"));
-              }, { timeout: 3000 });
+              }, { timeout: 2000 });
               break;  // success!
             } catch {
               // retry
             }
           }
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500));
           retries++;
         }
     
