@@ -320,7 +320,7 @@ async function startWithAutoRetry() {
   }
 
   if (fs.existsSync(outputPath)) {
-    fs.writeFileSync(outputPath, '[]', 'utf-8');
+    fs.writeFileSync(outputPath, '[', 'utf-8');
     console.log('🔄 Output file exists — contents cleared. Starting fresh.');
     scraped = 0;
   }
