@@ -1,5 +1,5 @@
 import moment from 'moment';
-import puppeteer, { ElementHandle } from 'puppeteer';
+import puppeteer, { ElementHandle, Browser } from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
@@ -11,9 +11,7 @@ const fullTime:string = currentDate.format('DD-MM-YYYY')  // used to save a file
 let scraped:number = 0;
 let alertDetected = false;
 
-async function run(semester:string, outputPath:string): Promise<boolean> {
-    //start browser
-    const browser = await puppeteer.launch({ headless: false });
+async function run(browser: Browser, semester: string, outputPath: string): Promise<boolean> {
     const page = await browser.newPage();
 
     try{
@@ -28,14 +26,12 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
     }
     catch (err){
       console.error("❌ Error loading the dialog box:", err);
-      await browser.close();
       return false;
     }
 
     await new Promise(resolve => setTimeout(resolve, 1500));  // let dialog resolve
 
     if (alertDetected) {
-      await browser.close();
       return true;
     }
     
@@ -46,7 +42,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
     }
     catch (err){
       console.error("❌ Error loading the URL:", err);
-      await browser.close();
       return false;
     }
   
@@ -56,7 +51,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
     let frame = page.frames().find(f => f.name() === 'main');
     if (!frame) {
       console.error('Main frame not found');
-      await browser.close();
       return false;
     }
 
@@ -70,7 +64,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
     });
     } catch (err){
       console.error("❌ Error finding 'advanced search' link:", err);
-      await browser.close();
       return false;
     }
     
@@ -82,12 +75,10 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
       }
       catch (err){
         console.error("❌ Failed to click 'advanced search':", err);
-        await browser.close();
         return false;
       }
     } else {
         console.log("X Could not find 'advanced search'");
-        await browser.close();
         return false;
     }
 
@@ -97,7 +88,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
       frame = page.frames().find(f => f.name() === 'main');
     if (!frame) {
         console.error('Search frame not found after click');
-        await browser.close();
         return false;
     }
 
@@ -110,7 +100,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
         console.log("Typed '*' into course name field");
     } else {
         console.log("Could not find course name input field");
-        await browser.close();
         return false;
     }
 
@@ -121,7 +110,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
         console.log(`Selected semester '${semester}'`);
     } else {
         console.log("Could not find semester dropdown");
-        await browser.close();
         return false;
     }
     
@@ -136,18 +124,15 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
         }
         catch (err){
           console.error("❌ Failed to click 'search':", err);
-          await browser.close();
           return false;
         }
       } else {
         console.log("Could not find 'search' button");
-        await browser.close();
         return false;
       }
     }
     catch (err){
       console.error("❌ Error handling the advanced search parameters insertion", err);
-      await browser.close();
       return false;
     }
     
@@ -157,7 +142,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
     frame = page.frames().find(f => f.name() === 'main');
     if (!frame) {
       console.error('Main frame not found after search');
-      await browser.close();
       return false;
     }
   
@@ -172,7 +156,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
     console.log(`🔍 Found ${total} courses to check`);
     if (total == 0){ // this is a problem. when there aren't any corresponding courses, there will be a browser flashing
       console.log("Error loading the courses");
-      await browser.close();
       return false;
     }
     initializeFile(outputPath);
@@ -191,7 +174,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
       const href = hrefs[scraped];
       if (!href) {
         console.log(`X Skipping missing link at index ${scraped}`);
-        browser.close();
         return false;
       }
     
@@ -206,7 +188,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
       }
       catch (err){
         console.error("Failed to enter course:", err);
-        await browser.close();
         return false;
       }
         
@@ -214,7 +195,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
         const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
         if (!courseLink) {
           console.log("X Could not find course link");
-          await browser.close();
           return false;
         }
         try{
@@ -222,12 +202,10 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
         }
         catch (err){
           console.error("❌ Failed to click 'course link':", err);
-          await browser.close();
           return false;
         }
       }
       else{
-        await browser.close();
         return false;
       }
 
@@ -236,7 +214,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
       const resultFrame2 = page.frames().find(f => f.name() === 'main');
       if (!resultFrame2) {
         console.log("X Missing course details frame");
-        await browser.close();
         return false;
       }
       let scheduleItems: timeSpace[] = [];
@@ -293,7 +270,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
       }
       catch(err){
         console.error("❌ Failed to go back:", err);
-        await browser.close();
         return false;
       }
   
@@ -323,7 +299,6 @@ async function run(semester:string, outputPath:string): Promise<boolean> {
       scraped++;
     } //went through all courses
   
-    await browser.close();
     return true;
 }
 
@@ -352,15 +327,17 @@ async function startWithAutoRetry() {
   else {
     console.log('🆕 Output file does not exist — starting from scratch.');
   }
-  
+
   while (true) {
-    try{
-      const completed = await run(semester, outputPath);
+    const browser = await puppeteer.launch({ headless: false });
+    try {
+      const completed = await run(browser, semester, outputPath);
       if (completed) break;
-    }
-    catch(err){
-      console.error("❌general error with run:", err);
-      continue;
+    } catch (err) {
+      console.error("❌ General error with run:", err);
+      // retry
+    } finally {
+      await browser.close();
     }
   }
   finalizeFile(outputPath);

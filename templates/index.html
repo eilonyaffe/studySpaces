@@ -2,23 +2,53 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Simple Frontend - Only Hours</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+<title>studySpaces</title>
 <style>
   body {
     font-family: Arial, sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 50px;
+    margin: 20px;
   }
 
-  label, select, input {
-    margin: 10px;
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
   }
 
-  select, input[type="date"] {
-    width: 150px;
-    padding: 5px;
+  form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 300px;
+    width: 100%;
+  }
+
+  label {
+    margin: 10px 0 5px;
+    font-size: 1rem;
+  }
+
+  select, input[type="date"], button {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+
+  button {
+    margin-top: 20px;
+  }
+
+  /* Optional: Media query for very large screens */
+  @media (min-width: 600px) {
+    form {
+      max-width: 400px;
+    }
   }
 </style>
 </head>
@@ -28,19 +58,14 @@
 
 <form>
   <label for="startTime">Start Hour:</label>
-  <select id="startTime" name="startTime" required>
-    <!-- JavaScript will fill these options -->
-  </select>
+  <select id="startTime" name="startTime" required></select>
 
   <label for="endTime">End Hour:</label>
-  <select id="endTime" name="endTime" required>
-    <!-- JavaScript will fill these options -->
-  </select>
+  <select id="endTime" name="endTime" required></select>
 
   <label for="date">Date:</label>
   <input type="date" id="date" name="date" required>
 
-  <br><br>
   <button type="submit">Submit</button>
 </form>
 
