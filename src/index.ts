@@ -354,8 +354,14 @@ async function startWithAutoRetry() {
   }
   
   while (true) {
-    const completed = await run(semester, outputPath);
-    if (completed) break;
+    try{
+      const completed = await run(semester, outputPath);
+      if (completed) break;
+    }
+    catch(err){
+      console.error("❌general error with run:", err);
+      continue;
+    }
   }
   finalizeFile(outputPath);
 }
