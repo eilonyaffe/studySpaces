@@ -57,3 +57,10 @@ export function finalizeFile(path: string) {
 export function writeBadNum(path: string, course_id: number) {
     fs.appendFileSync(path, `${course_id}\n`, 'utf-8');
 }
+
+export function readBadNums(filePath: string): number[] {
+  if (!fs.existsSync(filePath)) return [];
+  const content = fs.readFileSync(filePath, 'utf-8').trim();
+  if (!content) return [];
+  return content.split('\n').map(line => parseInt(line.trim())).filter(n => !isNaN(n));
+}

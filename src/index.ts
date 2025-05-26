@@ -12,7 +12,7 @@ let scraped:number = 0;
 let alertDetected = false;
 
 const unscraped_path = path.join("data/full");
-const unscraped_path_file = path.join(unscraped_path, "unscraped.json");
+const unscraped_path_file = path.join(unscraped_path, "unscraped.txt");
 fs.writeFileSync(unscraped_path_file, '', 'utf-8');
 
 const RUN_BAD_COURSES_AGAIN = true;  // runs the courses who weren't scraped right in the first run, again
