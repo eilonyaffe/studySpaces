@@ -43,7 +43,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
       });
     }
     catch (err){
-      console.error("❌ Error loading the URL:", err);
+      console.error("Error loading the URL:", err);
       await browser.close();
       return false;
     }
@@ -66,7 +66,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         return result.singleNodeValue as HTMLElement | null;
     });
     } catch (err){
-      console.error("❌ Error finding 'advanced search' link:", err);
+      console.error("Error finding 'advanced search' link:", err);
       await browser.close();
       return false;
     }
@@ -78,12 +78,12 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         console.log("V Clicked 'advanced search'");
       }
       catch (err){
-        console.error("❌ Failed to click 'advanced search':", err);
+        console.error("Failed to click 'advanced search':", err);
         await browser.close();
         return false;
       }
     } else {
-        console.log("X Could not find 'advanced search'");
+        console.log("Could not find 'advanced search'");
         await browser.close();
         return false;
     }
@@ -146,16 +146,16 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
     if (dayHandle) {
       try{
         await dayHandle.click();
-        console.log(`✅ Clicked day element '${dayString}'`);
+        console.log(`Clicked day element '${dayString}'`);
       }
       catch (err){
-        console.error("❌ Failed to click 'day element':", err);
+        console.error("Failed to click 'day element':", err);
         await browser.close();
         return false;
       }
 
     } else {
-      console.warn(`⚠️ Could not find element with id '${dayString}'`);
+      console.warn(`Could not find element with id '${dayString}'`);
       await browser.close();
       return false;
     }
@@ -170,7 +170,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
           console.log("Clicked 'search' button");
         }
         catch (err){
-          console.error("❌ Failed to click 'search':", err);
+          console.error("Failed to click 'search':", err);
           await browser.close();
           return false;
         }
@@ -249,7 +249,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
             await courseLink.click();
           }
           catch (err){
-            console.error("❌ Failed to click 'course link':", err);
+            console.error("Failed to click 'course link':", err);
             await browser.close();
             return false;
           }
@@ -263,7 +263,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
     
         const resultFrame2 = page.frames().find(f => f.name() === 'main');
         if (!resultFrame2) {
-          console.log("X Missing course details frame");
+          console.log("Missing course details frame");
           await browser.close();
           return false;
         }
@@ -309,7 +309,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
               return output;
             }, hebrewDayMap, dayNum, startTimeNum, EndTimeNum);
         } catch (err){
-          console.error("❌ Failed to extract schedule from course detail page:", err);
+          console.error("Failed to extract schedule from course detail page:", err);
           continue;
         }
     
@@ -324,7 +324,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
           await resultFrame2.evaluate(() => window.history.back());
         }
         catch(err){
-          console.error("❌ Failed to go back:", err);
+          console.error("Failed to go back:", err);
           await browser.close();
           return false;
         }
@@ -349,7 +349,7 @@ async function run(dayString:string, stdStartTime:string, stdEndTime:string, day
         }
     
         if (!frame) {
-          console.error('❌ Failed to reload frame after going back');
+          console.error('Failed to reload frame after going back');
           break;
         }
         scraped++;

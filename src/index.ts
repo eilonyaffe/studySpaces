@@ -25,7 +25,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       });
     }
     catch (err){
-      console.error("❌ Error loading the dialog box:", err);
+      console.error("Error loading the dialog box:", err);
       return false;
     }
 
@@ -41,7 +41,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       });
     }
     catch (err){
-      console.error("❌ Error loading the URL:", err);
+      console.error("Error loading the URL:", err);
       return false;
     }
   
@@ -63,7 +63,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         return result.singleNodeValue as HTMLElement | null;
     });
     } catch (err){
-      console.error("❌ Error finding 'advanced search' link:", err);
+      console.error("Error finding 'advanced search' link:", err);
       return false;
     }
     
@@ -74,11 +74,11 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         console.log("V Clicked 'advanced search'");
       }
       catch (err){
-        console.error("❌ Failed to click 'advanced search':", err);
+        console.error("Failed to click 'advanced search':", err);
         return false;
       }
     } else {
-        console.log("X Could not find 'advanced search'");
+        console.log("Could not find 'advanced search'");
         return false;
     }
 
@@ -123,7 +123,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
           console.log("Clicked 'search' button");
         }
         catch (err){
-          console.error("❌ Failed to click 'search':", err);
+          console.error("Failed to click 'search':", err);
           return false;
         }
       } else {
@@ -132,7 +132,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       }
     }
     catch (err){
-      console.error("❌ Error handling the advanced search parameters insertion", err);
+      console.error("Error handling the advanced search parameters insertion", err);
       return false;
     }
     
@@ -194,14 +194,14 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       if (handle!=null){
         const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
         if (!courseLink) {
-          console.log("X Could not find course link");
+          console.log("Could not find course link");
           return false;
         }
         try{
           await courseLink.click();
         }
         catch (err){
-          console.error("❌ Failed to click 'course link':", err);
+          console.error("Failed to click 'course link':", err);
           return false;
         }
       }
@@ -213,7 +213,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
   
       const resultFrame2 = page.frames().find(f => f.name() === 'main');
       if (!resultFrame2) {
-        console.log("X Missing course details frame");
+        console.log("Missing course details frame");
         return false;
       }
       let scheduleItems: timeSpace[] = [];
@@ -254,7 +254,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
             return output;
           }, hebrewDayMap);
       } catch (err){
-        console.error("❌ Failed to extract schedule from course detail page:", err);
+        console.error("Failed to extract schedule from course detail page:", err);
         continue;
       }
   
@@ -262,14 +262,14 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         appendResultsToFile(outputPath, scheduleItems);
         console.log(`✅ Scraped ${scheduleItems.length} schedule(s):`, scheduleItems);
       } else {
-          console.log('ℹ️ Skipped course – no valid schedule entries found');
+          console.log('Skipped course – no valid schedule entries found');
       }
       
       try{
         await resultFrame2.evaluate(() => window.history.back());
       }
       catch(err){
-        console.error("❌ Failed to go back:", err);
+        console.error("Failed to go back:", err);
         return false;
       }
   
@@ -293,7 +293,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       }
   
       if (!frame) {
-        console.error('❌ Failed to reload frame after going back');
+        console.error('Failed to reload frame after going back');
         break;
       }
       scraped++;
@@ -334,7 +334,7 @@ async function startWithAutoRetry() {
       const completed = await run(browser, semester, outputPath);
       if (completed) break;
     } catch (err) {
-      console.error("❌ General error with run:", err);
+      console.error("General error with run:", err);
       // retry
     } finally {
       await browser.close();
