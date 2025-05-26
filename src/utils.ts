@@ -53,3 +53,7 @@ export function finalizeFile(path: string) {
     if (content.endsWith(',')) content = content.slice(0, -1); // remove trailing comma
     fs.writeFileSync(path, content + '\n]', 'utf-8');
 }
+
+export function writeBadNum(path: string, course_id: number) {
+    fs.appendFileSync(path, `${course_id}\n`, 'utf-8');
+}

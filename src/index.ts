@@ -3,13 +3,19 @@ import puppeteer, { ElementHandle, Browser } from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
-import { timeSpace, hebrewDayMap, askQuestion, appendResultsToFile, initializeFile, finalizeFile } from './utils';
+import { timeSpace, hebrewDayMap, askQuestion, appendResultsToFile, initializeFile, finalizeFile, writeBadNum } from './utils';
 
 const currentDate: moment.Moment = moment();
 const fullTime:string = currentDate.format('DD-MM-YYYY')  // used to save a file under data/user_queries/ by date and time
 
 let scraped:number = 0;
 let alertDetected = false;
+
+const unscraped_path = path.join("data/full");
+const unscraped_path_file = path.join(unscraped_path, "unscraped.json");
+fs.writeFileSync(unscraped_path_file, '', 'utf-8');
+
+const RUN_BAD_COURSES_AGAIN = true;  // runs the courses who weren't scraped right in the first run, again
 
 async function run(browser: Browser, semester: string, outputPath: string): Promise<boolean> {
     const page = await browser.newPage();
@@ -174,6 +180,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       const href = hrefs[scraped];
       if (!href) {
         console.log(`X Skipping missing link at index ${scraped}`);
+        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
     
@@ -188,6 +195,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       }
       catch (err){
         console.error("Failed to enter course:", err);
+        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
         
@@ -195,6 +203,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
         if (!courseLink) {
           console.log("Could not find course link");
+          writeBadNum(unscraped_path_file, scraped);
           return false;
         }
         try{
@@ -202,10 +211,12 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         }
         catch (err){
           console.error("Failed to click 'course link':", err);
+          writeBadNum(unscraped_path_file, scraped);
           return false;
         }
       }
       else{
+        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
 
@@ -214,6 +225,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       const resultFrame2 = page.frames().find(f => f.name() === 'main');
       if (!resultFrame2) {
         console.log("Missing course details frame");
+        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
       let scheduleItems: timeSpace[] = [];
@@ -255,6 +267,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
           }, hebrewDayMap);
       } catch (err){
         console.error("Failed to extract schedule from course detail page:", err);
+        writeBadNum(unscraped_path_file, scraped);
         continue;
       }
   
@@ -263,6 +276,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         console.log(`✅ Scraped ${scheduleItems.length} schedule(s):`, scheduleItems);
       } else {
           console.log('Skipped course – no valid schedule entries found');
+          writeBadNum(unscraped_path_file, scraped);
       }
       
       try{
@@ -270,6 +284,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       }
       catch(err){
         console.error("Failed to go back:", err);
+        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
   
@@ -294,6 +309,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
   
       if (!frame) {
         console.error('Failed to reload frame after going back');
+        writeBadNum(unscraped_path_file, scraped);
         break;
       }
       scraped++;
