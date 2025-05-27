@@ -2,39 +2,31 @@ import moment from 'moment';
 import path from 'path';
 import fs from 'fs';
 
-import { askQuestion, finalizeFile } from './utils';
-import { startWithAutoRetry } from './index';
-import { startWithAutoRetryBadCourses } from './run_bad_courses';
+import { askQuestion } from './utils';
+import { startWithAutoRetryFast } from './index';
 
-const RUN_BAD_COURSES_AGAIN = true;  // runs the courses who weren't scraped right in the first run, again
+async function main() {
+  const semester: string = await askQuestion('enter semester number (1, 2, 3):');
+  if (!['1', '2', '3'].includes(semester)) {
+    console.error('Invalid number');
+    return main();
+  }
 
+  const currentDate: moment.Moment = moment();
+  const fullTime: string = currentDate.format('DD-MM-YYYY');
 
-async function main(){
-    const semester:string = await askQuestion('enter semester number (1, 2, 3):');
-    if (!['1','2','3'].includes(semester)) {
-        console.error('Invalid number');
-        return main();
-    }
+  const dir = path.join(`data/full/semester_${semester}`);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 
-    const currentDate: moment.Moment = moment();
-    const fullTime:string = currentDate.format('DD-MM-YYYY')  // used to save a file under data/user_queries/ by date and time
+  const outputPath = path.join(dir, `${fullTime}.json`);
 
-    const dir = path.join(`data/full/semester_${semester}`);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    const outputPath = path.join(dir, `${fullTime}.json`);
-
-    await startWithAutoRetry(outputPath, semester);
-    console.log("VVV Finished running on the given semester");
-
-
-    if (RUN_BAD_COURSES_AGAIN == true) {
-        console.log("Running bad courses again...");
-        await startWithAutoRetryBadCourses(outputPath, semester);
-    }
-    else{
-        finalizeFile(outputPath);
-    }
+  // The new startWithAutoRetry logic no longer writes "bad courses" indices to a separate file,
+  // but it will still produce the output JSON file in one pass.
+  await startWithAutoRetryFast(outputPath, semester);
+//   finalizeFile(outputPath);
+  console.log("VVV Finished running on the given semester");
 }
 
 void main();

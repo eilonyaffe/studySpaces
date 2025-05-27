@@ -1,22 +1,17 @@
 import * as readline from 'readline';
 import fs from 'fs';
+import * as cheerio from "cheerio";
 
-export type timeSpace = {
-    building: number;
-    room: number;
-    day: number;
-    start: number;
-    end: number;
-};
-  
-export const hebrewDayMap: { [key: string]: number } = {
-"יום א": 1,
-"יום ב": 2,
-"יום ג": 3,
-"יום ד": 4,
-"יום ה": 5,
-"יום ו": 6,
-"יום ז": 7,
+interface timeSpace {
+  building: number;
+  room: number;
+  day: number;
+  start: number;
+  end: number;
+}
+
+const hebrewDayMap: { [key: string]: number } = {
+  "א": 1, "ב": 2, "ג": 3, "ד": 4, "ה": 5, "ו": 6, "שבת": 7
 };
 
 export function askQuestion(query: string): Promise<string> {
@@ -54,13 +49,61 @@ export function finalizeFile(path: string) {
     fs.writeFileSync(path, content + '\n]', 'utf-8');
 }
 
-export function writeBadNum(path: string, course_id: number) {
-    fs.appendFileSync(path, `${course_id}\n`, 'utf-8');
-}
-
 export function readBadNums(filePath: string): number[] {
   if (!fs.existsSync(filePath)) return [];
   const content = fs.readFileSync(filePath, 'utf-8').trim();
   if (!content) return [];
   return content.split('\n').map(line => parseInt(line.trim())).filter(n => !isNaN(n));
+}
+
+export function parseScheduleFromCoursePage(html: string): timeSpace[] {
+  const $ = cheerio.load(html);
+  const output: timeSpace[] = [];
+  const seen = new Set<string>();
+
+  const scheduleRows = $("table.dataTable").first().find("tr").toArray();
+
+  for (const row of scheduleRows) {
+    const detailTd = $(row).find("td").eq(3);
+    if (!detailTd.length) continue;
+
+    const detailsText = detailTd.text().replace(/\s+/g, " ").trim();
+
+    // Match day of week in Hebrew (e.g., "א", "ב", ...)
+    const dayMatch = detailsText.match(/יום ([א-ת])/);
+    let day;
+    if (!dayMatch){
+        day=-1;
+    }
+    else{
+        day = hebrewDayMap[dayMatch[1]] ?? -1;
+    }
+    // Match time
+    const timeMatch = detailsText.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+    if (!timeMatch) continue;
+    const start = parseInt(timeMatch[1].padStart(2, "0") + timeMatch[2]);
+    const end = parseInt(timeMatch[3].padStart(2, "0") + timeMatch[4]);
+
+
+    // Match building number
+    const bldMatch = detailsText.match(/\[(\d+)\]/);
+    const building = bldMatch ? parseInt(bldMatch[1]) : -1;
+    if ([1, 2, 3, 4, 5, 6, 7, 14, 47, 48, 25, 24, 9].includes(building)) continue;
+    if (building === 26 && /המרכז לאנרגיה.*\[26\]/.test(detailsText)) continue;
+
+    // Match room number
+    const roomMatch = detailsText.match(/חדר\s*(\d+)/);
+    const room = roomMatch ? parseInt(roomMatch[1]) : -1;
+
+    const item = { building, room, day, start, end };
+    if (Object.values(item).includes(-1)) continue;
+
+    const key = JSON.stringify(item);
+    if (!seen.has(key)) {
+      seen.add(key);
+      output.push(item);
+    }
+  }
+
+  return output;
 }
