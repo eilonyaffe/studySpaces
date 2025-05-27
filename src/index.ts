@@ -161,7 +161,7 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
     }
     initializeFile(outputPath);
       
-    while (scraped < 20) { 
+    while (scraped < total) { 
       frame = page.frames().find(f => f.name() === 'main');
       if (!frame) break;
   
@@ -246,6 +246,10 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
               const end:number = parseInt(t[3] + t[4]);
   
               const bld:number = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
+
+              if ([1,2,3,4,5,6,7,14,47,48,25,24,9].includes(bld)) continue; //these buildings are in other campuses
+              if (bld === 26 && /המרכז לאנרגיה.*\[26\]/.test(txt)) continue; //if has this prefix then it's 26 in sde boker
+
               const room:number = +(txt.match(/חדר\s*(-?\d+)/)?.[1] ?? -1);
           
               const item: any = { building: bld, room, day, start, end };
@@ -271,7 +275,6 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         console.log(`✅ Scraped ${scheduleItems.length} schedule(s):`, scheduleItems);
       } else {
           console.log('Skipped course – no valid schedule entries found');
-          writeBadNum(unscraped_path_file, scraped);
       }
       
       try{
@@ -337,5 +340,4 @@ export async function startWithAutoRetry(outputPath:string, semester:string) {
       await browser.close();
     }
   }
-  finalizeFile(outputPath);
 }

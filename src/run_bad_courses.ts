@@ -234,6 +234,10 @@ export async function runBadCourses(browser: Browser, semester: string, outputPa
               const end:number = parseInt(t[3] + t[4]);
   
               const bld:number = +(txt.match(/\[(\d+)\]/)?.[1] ?? -1);
+
+              if ([1,2,3,4,5,6,7,14,47,48,25,24,9].includes(bld)) continue;
+              if (bld === 26 && /המרכז לאנרגיה.*\[26\]/.test(txt)) continue;
+
               const room:number = +(txt.match(/חדר\s*(-?\d+)/)?.[1] ?? -1);
           
               const item: any = { building: bld, room, day, start, end };

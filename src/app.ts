@@ -2,7 +2,7 @@ import moment from 'moment';
 import path from 'path';
 import fs from 'fs';
 
-import { askQuestion } from './utils';
+import { askQuestion, finalizeFile } from './utils';
 import { startWithAutoRetry } from './index';
 import { startWithAutoRetryBadCourses } from './run_bad_courses';
 
@@ -31,6 +31,9 @@ async function main(){
     if (RUN_BAD_COURSES_AGAIN == true) {
         console.log("Running bad courses again...");
         await startWithAutoRetryBadCourses(outputPath, semester);
+    }
+    else{
+        finalizeFile(outputPath);
     }
 }
 
