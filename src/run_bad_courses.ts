@@ -2,18 +2,26 @@ import puppeteer, { ElementHandle, Browser } from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
-import { timeSpace, hebrewDayMap, appendResultsToFile, initializeFile, finalizeFile, writeBadNum } from './utils';
-
-let scraped:number = 0;
-let alertDetected = false;
-
-const unscraped_path = path.join("data/full");
-const unscraped_path_file = path.join(unscraped_path, "unscraped.txt"); //file to store unsuccessful scrape course indices. note it starts from 0
-fs.writeFileSync(unscraped_path_file, '', 'utf-8');
+import { timeSpace, hebrewDayMap, appendResultsToFile, finalizeFile } from './utils';
 
 
-async function run(browser: Browser, semester: string, outputPath: string): Promise<boolean> {
+export async function runBadCourses(browser: Browser, semester: string, outputPath: string): Promise<boolean> {
+    let alertDetected = false;
+    const unscrapedPath = path.join('data/full', 'unscraped.txt');
+    if (!fs.existsSync(unscrapedPath)) {
+        console.log('🟢 Nothing to retry – file missing/empty.');
+        return true;
+    }
     const page = await browser.newPage();
+
+    const badIndices = fs.readFileSync(unscrapedPath, 'utf-8').split(/\r?\n/).filter(Boolean).map(Number);
+
+    if (badIndices.length === 0) {
+        console.log('🟢 unscraped.txt is empty – nothing to redo.');
+        return true;
+    }
+
+    console.log(`➡ will retry ${badIndices.length} failed courses`);
 
     try{
       page.on('dialog', async dialog => {
@@ -146,22 +154,10 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       return false;
     }
   
-    await new Promise(resolve => setTimeout(resolve, 10000)); //must keep! ensures all course links load to correctly count courseLinks
+    await new Promise(resolve => setTimeout(resolve, 5000)); //must keep! ensures all course links load to correctly count courseLinks
 
-    const courseLinks = await frame.$$eval('a', anchors => //calulate the number of courses needed to scrape
-      anchors
-        .filter(a => a.href.includes("javascript:goCourseSemester"))
-        .map(a => a.getAttribute('href'))
-    );
-    const total = courseLinks.length;
-    console.log(`🔍 Found ${total} courses to check`);
-    if (total == 0){ // this is a problem. when there aren't any corresponding courses, there will be a browser flashing
-      console.log("Error loading the courses");
-      return false;
-    }
-    initializeFile(outputPath);
       
-    while (scraped < 20) { 
+  for (const idx of badIndices) {
       frame = page.frames().find(f => f.name() === 'main');
       if (!frame) break;
   
@@ -172,15 +168,12 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
           .map(a => a.getAttribute('href') || '')
       );
   
-      const href = hrefs[scraped];
+      const href = hrefs[idx];
       if (!href) {
-        console.log(`X Skipping missing link at index ${scraped}`);
-        writeBadNum(unscraped_path_file, scraped);
+        console.log(`X Skipping missing link at index ${idx}`);
         return false;
       }
-    
-      console.log(`➡ Visiting course ${scraped + 1}/${total}`);
-      
+          
       let handle;
       try{
         handle = await frame.evaluateHandle((href) => {
@@ -190,7 +183,6 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       }
       catch (err){
         console.error("Failed to enter course:", err);
-        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
         
@@ -198,7 +190,6 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         const courseLink = handle.asElement() as ElementHandle<HTMLAnchorElement> | null;
         if (!courseLink) {
           console.log("Could not find course link");
-          writeBadNum(unscraped_path_file, scraped);
           return false;
         }
         try{
@@ -206,12 +197,10 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         }
         catch (err){
           console.error("Failed to click 'course link':", err);
-          writeBadNum(unscraped_path_file, scraped);
           return false;
         }
       }
       else{
-        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
 
@@ -220,7 +209,6 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       const resultFrame2 = page.frames().find(f => f.name() === 'main');
       if (!resultFrame2) {
         console.log("Missing course details frame");
-        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
       let scheduleItems: timeSpace[] = [];
@@ -262,7 +250,6 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
           }, hebrewDayMap);
       } catch (err){
         console.error("Failed to extract schedule from course detail page:", err);
-        writeBadNum(unscraped_path_file, scraped);
         continue;
       }
   
@@ -271,7 +258,6 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
         console.log(`✅ Scraped ${scheduleItems.length} schedule(s):`, scheduleItems);
       } else {
           console.log('Skipped course – no valid schedule entries found');
-          writeBadNum(unscraped_path_file, scraped);
       }
       
       try{
@@ -279,7 +265,6 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
       }
       catch(err){
         console.error("Failed to go back:", err);
-        writeBadNum(unscraped_path_file, scraped);
         return false;
       }
   
@@ -304,31 +289,19 @@ async function run(browser: Browser, semester: string, outputPath: string): Prom
   
       if (!frame) {
         console.error('Failed to reload frame after going back');
-        writeBadNum(unscraped_path_file, scraped);
         break;
       }
-      scraped++;
     } //went through all courses
   
     return true;
 }
 
 
-export async function startWithAutoRetry(outputPath:string, semester:string) {
-
-  if (fs.existsSync(outputPath)) {
-    fs.writeFileSync(outputPath, '[', 'utf-8');
-    console.log('🔄 Output file exists — contents cleared. Starting fresh.');
-    scraped = 0;
-  }
-  else {
-    console.log('🆕 Output file does not exist — starting from scratch.');
-  }
-
+export async function startWithAutoRetryBadCourses(outputPath:string, semester:string) {
   while (true) {
     const browser = await puppeteer.launch({ headless: false });
     try {
-      const completed = await run(browser, semester, outputPath);
+      const completed = await runBadCourses(browser, semester, outputPath);
       if (completed) break;
     } catch (err) {
       console.error("General error with run:", err);

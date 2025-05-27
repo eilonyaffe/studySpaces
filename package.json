@@ -1,12 +1,12 @@
 {
     "name": "studyspace",
     "version": "1.0.0",
-    "main": "dist/index.js",
+    "main": "dist/app.js",
     "scripts": {
         "build": "tsc",
-        "start": "npm run build && node dist/index.js",
+        "start": "npm run build && node dist/app.js",
         "scrape": "npm run build && node dist/specific_scraper.js",
-        "dev": "ts-node src/index.ts"
+        "dev": "ts-node src/app.ts"
     },
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
