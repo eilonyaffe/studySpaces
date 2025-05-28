@@ -5,6 +5,8 @@ import fs from 'fs';
 import { askQuestion } from './utils';
 import { startWithAutoRetryFast } from './index';
 
+const retry:boolean = true;  // controls if we retry scraping courses that weren't successfully scraped the first time
+
 async function main() {
   const semester: string = await askQuestion('enter semester number (1, 2, 3):');
   if (!['1', '2', '3'].includes(semester)) {
@@ -22,10 +24,11 @@ async function main() {
 
   const outputPath = path.join(dir, `${fullTime}.json`);
 
-  // The new startWithAutoRetry logic no longer writes "bad courses" indices to a separate file,
-  // but it will still produce the output JSON file in one pass.
-  await startWithAutoRetryFast(outputPath, semester);
-//   finalizeFile(outputPath);
+  const unscraped_dir = path.join(`data/full`);
+  const unscrapedPath = path.join(unscraped_dir, 'unscraped.json');
+  fs.writeFileSync(unscrapedPath, '[]', 'utf-8');
+
+  await startWithAutoRetryFast(outputPath, semester, retry);
   console.log("VVV Finished running on the given semester");
 }
 

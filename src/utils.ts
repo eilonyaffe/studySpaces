@@ -1,5 +1,6 @@
 import * as readline from 'readline';
 import fs from 'fs';
+import path from "path";
 import * as cheerio from "cheerio";
 
 interface timeSpace {
@@ -9,6 +10,14 @@ interface timeSpace {
   start: number;
   end: number;
 }
+
+export type CourseLink = {
+  department: string;
+  degree_level: string;
+  course_number: string;
+  year: string;
+  semester: string;
+};
 
 const hebrewDayMap: { [key: string]: number } = {
   "א": 1, "ב": 2, "ג": 3, "ד": 4, "ה": 5, "ו": 6, "שבת": 7
@@ -28,19 +37,13 @@ return new Promise(resolve =>
 );
 }
 
-export function hourTo24hString(hour: number): string {
-    return hour.toString().padStart(2, '0') + ":00";
-}
-
 export function appendResultsToFile(path: string, items: timeSpace[]) {
     const data = items.map(item => JSON.stringify(item)).join(',\n') + ',\n';
     fs.appendFileSync(path, data, 'utf-8');
 }
 
 export function initializeFile(path: string) {
-    if (!fs.existsSync(path)) {
-        fs.writeFileSync(path, '[\n', 'utf-8');  // Start JSON array
-    }
+    fs.writeFileSync(path, '[\n', 'utf-8');  // Start JSON array
 }
 
 export function finalizeFile(path: string) {
@@ -49,11 +52,23 @@ export function finalizeFile(path: string) {
     fs.writeFileSync(path, content + '\n]', 'utf-8');
 }
 
-export function readBadNums(filePath: string): number[] {
-  if (!fs.existsSync(filePath)) return [];
-  const content = fs.readFileSync(filePath, 'utf-8').trim();
-  if (!content) return [];
-  return content.split('\n').map(line => parseInt(line.trim())).filter(n => !isNaN(n));
+export function appendToUnscraped(course: CourseLink) {
+  const unscrapedPath = path.join("data", "full", "unscraped.json");
+  let unscraped: CourseLink[] = [];
+
+  // Create file if it doesn't exist
+  if (fs.existsSync(unscrapedPath)) {
+    const data = fs.readFileSync(unscrapedPath, "utf-8");
+    try {
+      unscraped = JSON.parse(data);
+    } catch (err) {
+      console.error("❌ Failed to parse unscraped.json, resetting file...");
+    }
+  }
+
+  unscraped.push(course);
+  fs.writeFileSync(unscrapedPath, JSON.stringify(unscraped, null, 2), "utf-8");
+  console.log(`🔄 Added course ${course.course_number} to unscraped.json`);
 }
 
 export function parseScheduleFromCoursePage(html: string): timeSpace[] {

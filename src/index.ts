@@ -1,24 +1,19 @@
 import * as cheerio from "cheerio";
 import moment from "moment";
 import iconv from "iconv-lite";
+import path from 'path';
+import fs from 'fs';
 
-import {appendResultsToFile, initializeFile, finalizeFile, parseScheduleFromCoursePage } from "./utils";
+import {appendResultsToFile, initializeFile, finalizeFile, parseScheduleFromCoursePage, CourseLink, appendToUnscraped } from "./utils";
 
-type CourseLink = {
-  department: string;
-  degree_level: string;
-  course_number: string;
-  year: string;
-  semester: string;
-};
 
-async function get_links(semester:string): Promise<CourseLink[]> {
+async function get_links(semester: string): Promise<[CourseLink[], boolean]> {
   try {
     const currentYear = moment().format("YYYY");  // get current year dynamically
     const body = `rc_rowid=&lang=he&st=a&step=2&oc_course_name=*&on_course_ins=0&on_course_ins_list=0&on_course_department=&on_course_department_list=&on_course_degree_level=&on_course_degree_level_list=&on_course=&on_credit_points=&on_hours=&on_year=${currentYear}&on_semester=${semester}&oc_lecturer_last_name=&oc_lecturer_first_name=&oc_start_time=&oc_end_time=&on_campus=`;
 
     const res = await fetch("https://bgu4u.bgu.ac.il/pls/scwp/!app.ann", {
-      body: "rc_rowid=&lang=he&st=a&step=2&oc_course_name=*&on_course_ins=0&on_course_ins_list=0&on_course_department=&on_course_department_list=&on_course_degree_level=&on_course_degree_level_list=&on_course=&on_credit_points=&on_hours=&on_year=2025&on_semester=2&oc_lecturer_last_name=&oc_lecturer_first_name=&oc_start_time=&oc_end_time=&on_campus=",
+      body: body,
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -40,14 +35,14 @@ async function get_links(semester:string): Promise<CourseLink[]> {
     });
 
     console.log("Extracted links:", links.length);
-    return links;
+    return [links, links.length > 0];  // if zero, means the function run failed
   } catch (error) {
     console.error("❌ Error in get_links:", error);
-    return [];
+    return [[], false];
   }
 }
 
-async function data_from_page(course: CourseLink, outputPath: string): Promise<void> {
+async function data_from_page(course: CourseLink, outputPath: string, first_run: boolean): Promise<void> {
   try {
     const body = `rc_rowid=&lang=he&st=a&step=3&rn_course=${course.course_number}&rn_course_details=&rn_course_department=${course.department}&rn_course_degree_level=${course.degree_level}&rn_course_ins=0&rn_year=${course.year}&rn_semester=${course.semester}&oc_course_name=*&oc_end_time=&oc_lecturer_first_name=&oc_lecturer_last_name=&oc_start_time=&on_campus=&on_common=0&on_course=&on_course_degree_level=&on_course_degree_level_list=&on_course_department=&on_course_department_list=&on_course_ins=0&on_course_ins_list=0&on_credit_points=&on_hours=&on_lang=0&on_semester=${course.semester}&on_year=${course.year}`;
 
@@ -69,21 +64,67 @@ async function data_from_page(course: CourseLink, outputPath: string): Promise<v
       console.log(`✅ Scraped ${scheduleItems.length} schedule(s) from course ${course.course_number}:`, scheduleItems);
     } else {
       console.log(`Skipped course ${course.course_number} – no valid schedule entries found`);
+      if (first_run) appendToUnscraped(course);
     }
   } catch (err) {
     console.error(`❌ Error in data_from_page for course ${course.course_number}:`, err);
+    if (first_run) appendToUnscraped(course);
   }
 }
 
-export async function startWithAutoRetryFast(outputPath: string, semester:string): Promise<void> {
+async function retryBadCourses(outputPath: string): Promise<void> {
+  const unscrapedPath = path.join("data", "full", "unscraped.json");
+
+  if (!fs.existsSync(unscrapedPath)) {
+    console.log("No unscraped.json file found — skipping retry.");
+    return;
+  }
+
+  const data = fs.readFileSync(unscrapedPath, "utf-8").trim();
+  if (!data || data === "[]") {
+    console.log("unscraped.json is empty — nothing to retry.");
+    return;
+  }
+
+  let courses: CourseLink[];
+  try {
+    courses = JSON.parse(data);
+  } catch (err) {
+    console.error("❌ Failed to parse unscraped.json:", err);
+    return;
+  }
+
+  console.log(`🔁 Retrying ${courses.length} courses from unscraped.json`);
+
+  for (const course of courses) {
+    await data_from_page(course, outputPath, false);
+  }
+
+  console.log("✅ Finished retrying unscraped courses");
+}
 
 
-  const links = await get_links(semester);
+export async function startWithAutoRetryFast(outputPath: string, semester: string, retry: boolean): Promise<void> {
+
+  let links: CourseLink[] = [];
+  let got_links = false;
+
+  while (!got_links) {
+    const [retrievedLinks, success] = await get_links(semester);
+    links = retrievedLinks;
+    got_links = success;
+
+    if (!got_links) {
+      console.log("Retrying get_links due to no links retrieved...");
+    }
+  }
   initializeFile(outputPath);
 
   for (const link of links) {
-    await data_from_page(link, outputPath);
+    await data_from_page(link, outputPath, true);
   }
+
+  if (retry) await retryBadCourses(outputPath);
 
   finalizeFile(outputPath);
 }
