@@ -5,7 +5,7 @@ import fs from 'fs';
 import { askQuestion } from './utils';
 import { startWithAutoRetryFast } from './index';
 
-const retry:boolean = true;  // controls if we retry scraping courses that weren't successfully scraped the first time
+const retry:boolean = false;  // controls if we retry scraping courses that weren't successfully scraped the first time
 
 async function main() {
   const semester: string = await askQuestion('enter semester number (1, 2, 3):');

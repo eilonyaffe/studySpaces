@@ -9,7 +9,7 @@ import {appendResultsToFile, initializeFile, finalizeFile, parseScheduleFromCour
 
 async function get_links(semester: string): Promise<[CourseLink[], boolean]> {
   try {
-    const currentYear = moment().format("YYYY");  // get current year dynamically
+    const currentYear = moment().format("YYYY");
     const body = `rc_rowid=&lang=he&st=a&step=2&oc_course_name=*&on_course_ins=0&on_course_ins_list=0&on_course_department=&on_course_department_list=&on_course_degree_level=&on_course_degree_level_list=&on_course=&on_credit_points=&on_hours=&on_year=${currentYear}&on_semester=${semester}&oc_lecturer_last_name=&oc_lecturer_first_name=&oc_start_time=&oc_end_time=&on_campus=`;
 
     const res = await fetch("https://bgu4u.bgu.ac.il/pls/scwp/!app.ann", {

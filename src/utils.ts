@@ -11,6 +11,7 @@ interface timeSpace {
   end: number;
 }
 
+// All needed info for the POST request
 export type CourseLink = {
   department: string;
   degree_level: string;
@@ -84,7 +85,7 @@ export function parseScheduleFromCoursePage(html: string): timeSpace[] {
 
     const detailsText = detailTd.text().replace(/\s+/g, " ").trim();
 
-    // Match day of week in Hebrew (e.g., "א", "ב", ...)
+    // Match day of week in Hebrew
     const dayMatch = detailsText.match(/יום ([א-ת])/);
     let day;
     if (!dayMatch){
@@ -103,15 +104,17 @@ export function parseScheduleFromCoursePage(html: string): timeSpace[] {
     // Match building number
     const bldMatch = detailsText.match(/\[(\d+)\]/);
     const building = bldMatch ? parseInt(bldMatch[1]) : -1;
+
+    // Avoiding buildings not in the main campus
     if ([1, 2, 3, 4, 5, 6, 7, 14, 47, 48, 25, 24, 9].includes(building)) continue;
     if (building === 26 && /המרכז לאנרגיה.*\[26\]/.test(detailsText)) continue;
 
     // Match room number
-    const roomMatch = detailsText.match(/חדר\s*(\d+)/);
+    const roomMatch = detailsText.match(/חדר\s*(-?\d+)/);
     const room = roomMatch ? parseInt(roomMatch[1]) : -1;
 
     const item = { building, room, day, start, end };
-    if (Object.values(item).includes(-1)) continue;
+    if (day === -1 || start === -1 || end === -1 || building === -1 || room === -1) continue;
 
     const key = JSON.stringify(item);
     if (!seen.has(key)) {
