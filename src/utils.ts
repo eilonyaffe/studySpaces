@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from "path";
 import * as cheerio from "cheerio";
 
-interface timeSpace {
+export interface timeSpace {
   building: number;
   room: number;
   day: number;

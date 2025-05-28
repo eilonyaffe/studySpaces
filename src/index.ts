@@ -7,7 +7,7 @@ import fs from 'fs';
 import {appendResultsToFile, initializeFile, finalizeFile, parseScheduleFromCoursePage, CourseLink, appendToUnscraped } from "./utils";
 
 
-async function get_links(semester: string): Promise<[CourseLink[], boolean]> {
+async function getLinks(semester: string): Promise<[CourseLink[], boolean]> {
   try {
     const currentYear = moment().format("YYYY");
     const body = `rc_rowid=&lang=he&st=a&step=2&oc_course_name=*&on_course_ins=0&on_course_ins_list=0&on_course_department=&on_course_department_list=&on_course_degree_level=&on_course_degree_level_list=&on_course=&on_credit_points=&on_hours=&on_year=${currentYear}&on_semester=${semester}&oc_lecturer_last_name=&oc_lecturer_first_name=&oc_start_time=&oc_end_time=&on_campus=`;
@@ -37,12 +37,12 @@ async function get_links(semester: string): Promise<[CourseLink[], boolean]> {
     console.log("Extracted links:", links.length);
     return [links, links.length > 0];  // if zero, means the function run failed
   } catch (error) {
-    console.error("❌ Error in get_links:", error);
+    console.error("❌ Error in getLinks:", error);
     return [[], false];
   }
 }
 
-async function data_from_page(course: CourseLink, outputPath: string, first_run: boolean): Promise<void> {
+async function dataFromPage(course: CourseLink, outputPath: string, first_run: boolean): Promise<void> {
   try {
     const body = `rc_rowid=&lang=he&st=a&step=3&rn_course=${course.course_number}&rn_course_details=&rn_course_department=${course.department}&rn_course_degree_level=${course.degree_level}&rn_course_ins=0&rn_year=${course.year}&rn_semester=${course.semester}&oc_course_name=*&oc_end_time=&oc_lecturer_first_name=&oc_lecturer_last_name=&oc_start_time=&on_campus=&on_common=0&on_course=&on_course_degree_level=&on_course_degree_level_list=&on_course_department=&on_course_department_list=&on_course_ins=0&on_course_ins_list=0&on_credit_points=&on_hours=&on_lang=0&on_semester=${course.semester}&on_year=${course.year}`;
 
@@ -67,7 +67,7 @@ async function data_from_page(course: CourseLink, outputPath: string, first_run:
       if (first_run) appendToUnscraped(course);
     }
   } catch (err) {
-    console.error(`❌ Error in data_from_page for course ${course.course_number}:`, err);
+    console.error(`❌ Error in dataFromPage for course ${course.course_number}:`, err);
     if (first_run) appendToUnscraped(course);
   }
 }
@@ -97,7 +97,7 @@ async function retryBadCourses(outputPath: string): Promise<void> {
   console.log(`🔁 Retrying ${courses.length} courses from unscraped.json`);
 
   for (const course of courses) {
-    await data_from_page(course, outputPath, false);
+    await dataFromPage(course, outputPath, false);
   }
 
   console.log("✅ Finished retrying unscraped courses");
@@ -107,21 +107,21 @@ async function retryBadCourses(outputPath: string): Promise<void> {
 export async function startWithAutoRetryFast(outputPath: string, semester: string, retry: boolean): Promise<void> {
 
   let links: CourseLink[] = [];
-  let got_links = false;
+  let gotLinks = false;
 
-  while (!got_links) {
-    const [retrievedLinks, success] = await get_links(semester);
+  while (!gotLinks) {
+    const [retrievedLinks, success] = await getLinks(semester);
     links = retrievedLinks;
-    got_links = success;
+    gotLinks = success;
 
-    if (!got_links) {
-      console.log("Retrying get_links due to no links retrieved...");
+    if (!gotLinks) {
+      console.log("Retrying getLinks due to no links retrieved...");
     }
   }
   initializeFile(outputPath);
 
   for (const link of links) {
-    await data_from_page(link, outputPath, true);
+    await dataFromPage(link, outputPath, true);
   }
 
   if (retry) await retryBadCourses(outputPath);
