@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from "path";
 
-import {appendResultsToFile, initializeFile, finalizeFile, timeSpace } from "./utils";
+import {initializeFile, timeSpace } from "./utils";
 
 
 export function initializeDataFiles(semester:string) {
@@ -17,36 +17,124 @@ const dir = path.join(`data/full/semester_${semester}/processed`);
   }
 }
 
-export function distributeTimeSpacesToTimeFiles(semester: string, inputFilePath: string) {
+
+//Fill the files with all relevant classrooms
+export function fillTimeFilesWithFullBuildingRoomDays(semester: string, inputFilePath: string) {
   const inputData: timeSpace[] = JSON.parse(fs.readFileSync(inputFilePath, 'utf-8'));
 
   const dir = path.join(`data/full/semester_${semester}/processed`);
 
-  // Prepare an object to accumulate data for each hour
-  const hourlyData: { [hour: number]: timeSpace[] } = {};
-  for (let hour = 8; hour <= 20; hour++) {
-    hourlyData[hour] = [];
+  // Collect all unique building-room pairs from the input data
+  const buildingRoomPairs: Set<string> = new Set();
+  for (const entry of inputData) {
+    const key = JSON.stringify({ building: entry.building, room: entry.room });
+    buildingRoomPairs.add(key);
   }
 
-  // For each timeSpace, see which hours it overlaps with
-  for (const entry of inputData) {
-    for (let hour = 8; hour <= 20; hour++) {
-      const intervalStart = hour * 100;     // e.g., 14 -> 1400
-      const intervalEnd = (hour + 1) * 100; // e.g., 14 -> 1500
-
-      // Check for overlap
-      if (entry.start < intervalEnd && entry.end > intervalStart) {
-        hourlyData[hour].push(entry);
-      }
+  // Prepare the full set of entries for days 1–7 for each building-room pair
+  const allEntries: { building: number; room: number; day: number }[] = [];
+  for (const pairStr of buildingRoomPairs) {
+    const { building, room } = JSON.parse(pairStr);
+    for (let day = 1; day <= 7; day++) {
+      allEntries.push({ building, room, day });
     }
   }
 
-  // Append the entries to their respective hourly JSON files
+  // Initialize or overwrite each hourly JSON file with these entries
   for (let hour = 8; hour <= 20; hour++) {
     const outputPath = path.join(dir, `${hour}.json`);
-    appendResultsToFile(outputPath, hourlyData[hour]);
-    finalizeFile(outputPath);
+    fs.writeFileSync(outputPath, JSON.stringify(allEntries, null, 2), 'utf-8');
   }
 
-  console.log("✅ Distribution of timeSpaces completed!");
+  console.log("✅ All time files filled with building-room-day combinations!");
+}
+
+//This does the complement operation- uses the scheduled classes to remove occupied studySpaces by some course
+export function removeOccupiedEntriesFromTimeFiles(semester: string, inputFilePath: string) {
+  const inputData: timeSpace[] = JSON.parse(fs.readFileSync(inputFilePath, 'utf-8'));
+  const processedDir = path.join(`data/full/semester_${semester}/processed`);
+  const removedDir = path.join(processedDir, 'removed');
+
+  // Create 'removed' directory if it doesn't exist
+  if (!fs.existsSync(removedDir)) {
+    fs.mkdirSync(removedDir, { recursive: true });
+  }
+
+  // For each hourly file (8–20)
+  for (let hour = 8; hour <= 20; hour++) {
+    const outputPath = path.join(processedDir, `${hour}.json`);
+    const hourEntries: { building: number; room: number; day: number }[] = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
+
+    const intervalStart = hour * 100;
+    const intervalEnd = (hour + 1) * 100;
+
+    // Arrays for updated entries and removed entries
+    const updatedEntries: typeof hourEntries = [];
+    const removedEntries: any[] = [];
+
+    for (const entry of hourEntries) {
+      const conflicting = inputData.find(scheduled =>
+        scheduled.building === entry.building &&
+        scheduled.room === entry.room &&
+        scheduled.day === entry.day &&
+        scheduled.start < intervalEnd &&
+        scheduled.end > intervalStart
+      );
+
+      if (conflicting) {
+        // Record what was removed and why
+        removedEntries.push({
+          ...entry,
+          reason: conflicting  //inserts the confliction to the file containing the removed
+        });
+      } else {
+        // Keep if not occupied
+        updatedEntries.push(entry);
+      }
+    }
+
+    // Write updated hourly file
+    fs.writeFileSync(outputPath, JSON.stringify(updatedEntries, null, 2), 'utf-8');
+
+    // Write removed entries file
+    const removedPath = path.join(removedDir, `${hour}.json`);
+    fs.writeFileSync(removedPath, JSON.stringify(removedEntries, null, 2), 'utf-8');
+  }
+
+  console.log("✅ Removed occupied entries from hourly files and stored them in processed/removed/");
+}
+
+export function squeezeAllJsonFilesToArrayJsonFormat(semester: string) {
+  const processedDir = path.join(`data/full/semester_${semester}/processed`);
+
+  // Helper to process a directory (like processed/ or processed/removed/)
+  const squeezeDir = (dirPath: string) => {
+    const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      const content = fs.readFileSync(filePath, 'utf-8').trim();
+
+      let data: any[] = [];
+      try {
+        // Try to parse as a full JSON array
+        data = JSON.parse(content);
+      } catch (err) {
+        // Might be JSON lines; parse each line
+        data = content.split('\n').filter(line => line.trim()).map(line => JSON.parse(line));
+      }
+
+      // Create JSON array (pretty but with one line per object)
+      const finalJson = '[\n' + data.map(entry => JSON.stringify(entry)).join(',\n') + '\n]';
+      fs.writeFileSync(filePath, finalJson, 'utf-8');
+    }
+  };
+
+  // Process processed/ and processed/removed/
+  squeezeDir(processedDir);
+  const removedDir = path.join(processedDir, 'removed');
+  if (fs.existsSync(removedDir)) {
+    squeezeDir(removedDir);
+  }
+
+  console.log("✅ Squeezed all JSON files to valid JSON arrays (each object on its own line)!");
 }

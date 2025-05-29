@@ -4,7 +4,7 @@ import fs from 'fs';
 
 import { askQuestion } from './utils';
 import { startWithAutoRetryFast } from './index';
-import { initializeDataFiles, distributeTimeSpacesToTimeFiles } from './data_post_process';
+import { initializeDataFiles, fillTimeFilesWithFullBuildingRoomDays, removeOccupiedEntriesFromTimeFiles, squeezeAllJsonFilesToArrayJsonFormat } from './data_post_process';
 
 
 const retry:boolean = false;  // controls if we retry scraping courses that weren't successfully scraped the first time
@@ -30,11 +30,14 @@ async function main() {
   const unscrapedPath = path.join(unscraped_dir, 'unscraped.json');
   fs.writeFileSync(unscrapedPath, '[]', 'utf-8');
 
-  await startWithAutoRetryFast(outputPath, semester, retry);
-  console.log("VVV Finished running on the given semester");
+//   await startWithAutoRetryFast(outputPath, semester, retry);
+//   console.log("VVV Finished running on the given semester");
 
   initializeDataFiles(semester);
-  distributeTimeSpacesToTimeFiles(semester, outputPath);
+  fillTimeFilesWithFullBuildingRoomDays(semester, outputPath);
+  removeOccupiedEntriesFromTimeFiles(semester, outputPath);
+  squeezeAllJsonFilesToArrayJsonFormat(semester);
+
   console.log("✅ Data distribution completed.");
 }
 
