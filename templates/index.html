@@ -56,7 +56,7 @@
 
 <h2>Enter Time Range and Date</h2>
 
-<form>
+<form id="searchForm" action="/search" method="get">
   <label for="startTime">Start Hour:</label>
   <select id="startTime" name="startTime" required></select>
 
@@ -69,8 +69,11 @@
   <button type="submit">Submit</button>
 </form>
 
+<h3>Results</h3>
+<pre id="results"></pre>
+
 <script>
-  // Fill hour dropdowns with whole hours from 08 to 20
+  // Hour dropdowns
   const startSelect = document.getElementById('startTime');
   const endSelect = document.getElementById('endTime');
 
@@ -87,11 +90,24 @@
     endSelect.appendChild(option2);
   }
 
-  // Set date input to today and prevent past dates
+  // Date input
   const dateInput = document.getElementById('date');
   const today = new Date().toISOString().split('T')[0];
   dateInput.value = today;
   dateInput.min = today;
+
+  // Handle form submission with JavaScript to display results
+  document.getElementById('searchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const startTime = startSelect.value;
+    const endTime = endSelect.value;
+    const date = dateInput.value;
+
+    const response = await fetch(`/search?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&date=${encodeURIComponent(date)}`);
+    const data = await response.json();
+
+    document.getElementById('results').textContent = JSON.stringify(data, null, 2);
+  });
 </script>
 
 </body>
