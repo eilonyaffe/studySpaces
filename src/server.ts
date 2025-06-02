@@ -28,43 +28,62 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.get("/search", (req, res): void => {
-  const { startTime, given_date } = req.query;
+  const { startTime, endTime, given_date } = req.query;
 
-  if (!startTime || !given_date) {
+  if (!startTime || !endTime || !given_date) {
     res.status(400).json({ error: "Missing parameters" });
     return;
   }
-  console.log(startTime);
+  // console.log(startTime);
   const startTimeStr = Array.isArray(startTime) ? startTime[0] : String(startTime || '');
+  const endTimeStr = Array.isArray(endTime) ? endTime[0] : String(endTime || '');
   const startTimeHour = hourMap[startTimeStr as string] || 0;
+  const endTimeHour = hourMap[endTimeStr as string] || 0;
 
   // Convert date to day of week (1–7)
   const m = moment(given_date as string, "YYYY-MM-DD");
-  let dayNumber = m.day(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-  dayNumber = dayNumber + 1;
+  let dayNumber = m.day() + 1; // 0=Sunday, 1=Monday, ..., 6=Saturday
 
   // Load JSON files from data/full/semester_2/processed/
   const dirPath = path.join(__dirname, `../data/full/semester_${semester}/processed`);
-  const targetFile = fs.readdirSync(dirPath).find(f => f === `${startTimeHour}.json`);
+  // const targetFile = fs.readdirSync(dirPath).find(f => f === `${startTimeHour}.json`);
 
-  const results: any[] = [];
-  if (targetFile) {
-    const filePath = path.join(dirPath, targetFile);
+  type Entry = { building: number; room: number };
+  let validEntries: Entry[] | null = null;
+
+  for (let hour = startTimeHour; hour < endTimeHour; hour++) {
+    const filePath = path.join(dirPath, `${hour}.json`);
+
+    if (!fs.existsSync(filePath)) {
+      console.log(`File not found for hour ${hour}`);
+      validEntries = [];
+      break;
+    }
+
     const content = fs.readFileSync(filePath, 'utf-8');
     const jsonData = JSON.parse(content);
 
-    for (const entry of jsonData) {
-      if (entry.day === dayNumber) {
-        results.push(entry);
-        if (results.length >= 20) break;
-      }
+    const entriesThisHour: Entry[] = jsonData
+      .filter((entry: any) => entry.day === dayNumber)
+      .map((entry: any) => ({
+        building: entry.building,
+        room: entry.room
+      }));
+
+    if (validEntries === null) {
+      validEntries = entriesThisHour;
+    } else {
+      validEntries = validEntries.filter((ve: Entry) =>
+        entriesThisHour.some((e: Entry) => e.building === ve.building && e.room === ve.room)
+      );
+    }
+
+    if (validEntries.length === 0) {
+      break;
     }
   }
-  else{
-    console.log("no file!");
-  }
 
-  res.json(results);
+  res.json(validEntries || []);
 });
 
 app.listen(port, () => {
