@@ -37,7 +37,7 @@ async function getLinks(semester: string): Promise<[CourseLink[], boolean]> {
     console.log("Extracted links:", links.length);
     return [links, links.length > 0];  // if zero, means the function run failed
   } catch (error) {
-    console.error("❌ Error in getLinks:", error);
+    console.error("Error in getLinks:", error);
     return [[], false];
   }
 }
@@ -67,7 +67,7 @@ async function dataFromPage(course: CourseLink, outputPath: string, first_run: b
       if (first_run) appendToUnscraped(course);
     }
   } catch (err) {
-    console.error(`❌ Error in dataFromPage for course ${course.course_number}:`, err);
+    console.error(`Error in dataFromPage for course ${course.course_number}:`, err);
     if (first_run) appendToUnscraped(course);
   }
 }
@@ -90,7 +90,7 @@ async function retryBadCourses(outputPath: string): Promise<void> {
   try {
     courses = JSON.parse(data);
   } catch (err) {
-    console.error("❌ Failed to parse unscraped.json:", err);
+    console.error("Failed to parse unscraped.json:", err);
     return;
   }
 

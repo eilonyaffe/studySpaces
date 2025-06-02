@@ -79,7 +79,7 @@ export function appendToUnscraped(course: CourseLink) {
     try {
       unscraped = JSON.parse(data);
     } catch (err) {
-      console.error("❌ Failed to parse unscraped.json, resetting file...");
+      console.error("Failed to parse unscraped.json, resetting file...");
     }
   }
 
