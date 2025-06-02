@@ -63,8 +63,8 @@
   <label for="endTime">End Hour:</label>
   <select id="endTime" name="endTime" required></select>
 
-  <label for="date">Date:</label>
-  <input type="date" id="date" name="date" required>
+  <label for="given_date">Date:</label>
+  <input type="date" id="given_date" name="given_date" required>
 
   <button type="submit">Submit</button>
 </form>
@@ -90,8 +90,8 @@
     endSelect.appendChild(option2);
   }
 
-  // Date input
-  const dateInput = document.getElementById('date');
+  // Date input (now 'given_date')
+  const dateInput = document.getElementById('given_date');
   const today = new Date().toISOString().split('T')[0];
   dateInput.value = today;
   dateInput.min = today;
@@ -101,9 +101,9 @@
     e.preventDefault();
     const startTime = startSelect.value;
     const endTime = endSelect.value;
-    const date = dateInput.value;
+    const given_date = dateInput.value;
 
-    const response = await fetch(`/search?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&date=${encodeURIComponent(date)}`);
+    const response = await fetch(`/search?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&given_date=${encodeURIComponent(given_date)}`);
     const data = await response.json();
 
     document.getElementById('results').textContent = JSON.stringify(data, null, 2);

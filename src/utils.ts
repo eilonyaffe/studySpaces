@@ -24,6 +24,22 @@ const hebrewDayMap: { [key: string]: number } = {
   "א": 1, "ב": 2, "ג": 3, "ד": 4, "ה": 5, "ו": 6, "שבת": 7
 };
 
+export const hourMap: { [key: string]: number } = {
+  "08:00": 8,
+  "09:00": 9,
+  "10:00": 10,
+  "11:00": 11,
+  "12:00": 12,
+  "13:00": 13,
+  "14:00": 14,
+  "15:00": 15,
+  "16:00": 16,
+  "17:00": 17,
+  "18:00": 18,
+  "19:00": 19,
+  "20:00": 20,
+};
+
 export function askQuestion(query: string): Promise<string> {
 const rl = readline.createInterface({
     input: process.stdin,
