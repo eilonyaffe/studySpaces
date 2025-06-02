@@ -6,9 +6,7 @@ import fs from 'fs';
 import moment from 'moment';
 import { hourMap } from './utils';
 
-
-const retry:boolean = false;  // controls if we retry scraping courses that weren't successfully scraped the first time
-const semester:number = 2;  // to be changed by admin, 1 2 or 3
+const semester:number = 2;  // to be changed by admin, 1 2 or 3 TODO change later as environment
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -71,9 +69,9 @@ app.get("/search", (req, res): void => {
       }));
 
     if (validEntries === null) {
-      validEntries = entriesThisHour;
+      validEntries = entriesThisHour; //at the first hour, keeps all entries with the correct day number
     } else {
-      validEntries = validEntries.filter((ve: Entry) =>
+      validEntries = validEntries.filter((ve: Entry) =>  //each subsequent iteration, filter for entries that are also in entriesThisHour, hence intersection
         entriesThisHour.some((e: Entry) => e.building === ve.building && e.room === ve.room)
       );
     }

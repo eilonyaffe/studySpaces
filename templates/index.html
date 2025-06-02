@@ -70,7 +70,16 @@
 </form>
 
 <h3>Results</h3>
-<pre id="results"></pre>
+<table id="resultsTable" border="1" cellpadding="8" style="border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th>Building</th>
+      <th>Room</th>
+      <th>Location</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
 <script>
   // Hour dropdowns
@@ -90,13 +99,12 @@
     endSelect.appendChild(option2);
   }
 
-  // Date input (now 'given_date')
+  // Date input
   const dateInput = document.getElementById('given_date');
   const today = new Date().toISOString().split('T')[0];
   dateInput.value = today;
   dateInput.min = today;
 
-  // Handle form submission with JavaScript to display results
   document.getElementById('searchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const startTime = startSelect.value;
@@ -106,7 +114,29 @@
     const response = await fetch(`/search?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&given_date=${encodeURIComponent(given_date)}`);
     const data = await response.json();
 
-    document.getElementById('results').textContent = JSON.stringify(data, null, 2);
+    // Fill the table
+    const tbody = document.querySelector('#resultsTable tbody');
+    tbody.innerHTML = ''; // Clear previous results
+
+    if (data.length === 0) {
+      const row = tbody.insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 3;
+      cell.textContent = 'No results found';
+      cell.style.textAlign = 'center';
+    } else {
+      data.forEach(entry => {
+        const row = tbody.insertRow();
+        const cellBuilding = row.insertCell();
+        cellBuilding.textContent = entry.building;
+
+        const cellRoom = row.insertCell();
+        cellRoom.textContent = entry.room;
+
+        const cellLocation = row.insertCell();
+        cellLocation.textContent = ''; // Leave empty for now
+      });
+    }
   });
 </script>
 
