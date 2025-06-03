@@ -44,6 +44,20 @@
     margin-top: 20px;
   }
 
+  #getLocationBtn {
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 1rem;
+  width: 100%;
+  cursor: pointer;
+  margin-top: 10px;
+  }
+  #getLocationBtn:hover {
+    background-color: #333;
+  }
+
   /* Optional: Media query for very large screens */
   @media (min-width: 600px) {
     form {
@@ -65,7 +79,9 @@
 
   <label for="given_date">Date:</label>
   <input type="date" id="given_date" name="given_date" required>
-
+  <input type="hidden" id="lat" name="lat">
+  <input type="hidden" id="lon" name="lon">
+  <button type="button" id="getLocationBtn">Use My Location</button>
   <button type="submit">Submit</button>
 </form>
 
@@ -137,6 +153,35 @@
         cellLocation.textContent = ''; // Leave empty for now
       });
     }
+  });
+
+    document.getElementById('getLocationBtn').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        console.log(`User location: ${latitude}, ${longitude}`);
+
+        // You can send this to the server if needed:
+        // fetch('/register_location', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ lat: latitude, lng: longitude })
+        // });
+
+        document.getElementById('lat').value = latitude;
+        document.getElementById('lon').value = longitude;
+        alert(`Location registered!\nLatitude: ${latitude}\nLongitude: ${longitude}`);
+      },
+      (error) => {
+        console.error(error);
+        alert('Unable to retrieve your location.');
+      }
+    );
   });
 </script>
 <p style="margin-top: 40px; font-size: 0.9rem; color: #888;">

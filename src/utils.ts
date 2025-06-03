@@ -2,6 +2,10 @@ import * as readline from 'readline';
 import fs from 'fs';
 import path from "path";
 import * as cheerio from "cheerio";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface timeSpace {
   building: number;
@@ -22,6 +26,14 @@ export type CourseLink = {
 
 const hebrewDayMap: { [key: string]: number } = {
   "א": 1, "ב": 2, "ג": 3, "ד": 4, "ה": 5, "ו": 6, "שבת": 7
+};
+
+export type Entry = { building: number; room: number };
+
+type Location = {
+  building: number;
+  latitude: string;
+  longitude: string;
 };
 
 export const hourMap: { [key: string]: number } = {
@@ -140,4 +152,44 @@ export function parseScheduleFromCoursePage(html: string): timeSpace[] {
   }
 
   return output;
+}
+
+function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in km
+  const toRad = (deg: number) => deg * (Math.PI / 180);
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) ** 2;
+
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+export function sortEntries(validEntries: Entry[], userLat?: number, userLon?: number): Entry[] {
+  const locPath = path.join(__dirname, "../static/locations.json");
+  const raw = fs.readFileSync(locPath, 'utf-8');
+  const locations: Location[] = JSON.parse(raw);
+
+  const locationMap = new Map<number, Location>();
+  for (const loc of locations) {
+    locationMap.set(loc.building, loc);
+  }
+
+  if (userLat !== undefined && userLon !== undefined) {
+    return validEntries
+      .map(entry => {
+        const loc = locationMap.get(entry.building);
+        const distance = loc
+          ? haversine(userLat, userLon, parseFloat(loc.latitude), parseFloat(loc.longitude))
+          : Infinity;
+        return { ...entry, distance };
+      })
+      .sort((a, b) => a.distance - b.distance)
+      .map(({ building, room }) => ({ building, room }));
+  } else {
+    return validEntries.sort((a, b) => a.building - b.building);
+  }
 }

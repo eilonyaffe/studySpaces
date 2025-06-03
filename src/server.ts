@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import fs from 'fs';
 import moment from 'moment';
-import { hourMap } from './utils';
+import { hourMap, Entry, sortEntries } from './utils';
 
 const semester:number = 2;  // to be changed by admin, 1 2 or 3 TODO change later as environment
 
@@ -26,7 +26,9 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.get("/search", (req, res): void => {
-  const { startTime, endTime, given_date } = req.query;
+  const { startTime, endTime, given_date, lat, lon } = req.query;
+  const userLat = lat ? parseFloat(lat as string) : undefined;
+  const userLon = lon ? parseFloat(lon as string) : undefined;
 
   if (!startTime || !endTime || !given_date) {
     res.status(400).json({ error: "Missing parameters" });
@@ -46,7 +48,6 @@ app.get("/search", (req, res): void => {
   const dirPath = path.join(__dirname, `../data/full/semester_${semester}/processed`);
   // const targetFile = fs.readdirSync(dirPath).find(f => f === `${startTimeHour}.json`);
 
-  type Entry = { building: number; room: number };
   let validEntries: Entry[] | null = null;
 
   for (let hour = startTimeHour; hour < endTimeHour; hour++) {
@@ -80,8 +81,8 @@ app.get("/search", (req, res): void => {
       break;
     }
   }
-
-  res.json(validEntries || []);
+  const sorted = sortEntries(validEntries || [], userLat, userLon);
+  res.json(sorted);
 });
 
 app.listen(port, () => {
