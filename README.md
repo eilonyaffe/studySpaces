@@ -22,16 +22,3 @@ A Node.js/TypeScript project for managing and serving study space data at BGU.
 ## ⚙️ Scripts
 - `npm start` → Build & run `server.ts`
 - `npm run scrape` → Build & run `app.ts`
-
----
-
-## 🔧 Usage
-1️⃣ Install:  
-```bash
-npm install
-
-2️⃣ Scrape data (admin):
-npm run scrape
-
-3️⃣ Start server:
-npm start
