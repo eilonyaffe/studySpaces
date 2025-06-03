@@ -6,7 +6,7 @@ import { askQuestion } from './utils';
 import { startWithAutoRetryFast } from './index';
 import { initializeDataFiles, fillTimeFilesWithFullBuildingRoomDays, removeOccupiedEntriesFromTimeFiles, squeezeAllJsonFilesToArrayJsonFormat } from './data_post_process';
 
-const retry:boolean = false;  // controls if we retry scraping courses that weren't successfully scraped the first time TODO change later as environment
+const retry:boolean = true;  // controls if we retry scraping courses that weren't successfully scraped the first time TODO change later as environment
 
 async function main() {
   const semester: string = await askQuestion('enter semester number (1, 2, 3):');

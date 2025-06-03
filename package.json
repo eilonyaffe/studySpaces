@@ -7,7 +7,7 @@
         "build": "tsc",
         "start": "npx tsx watch --env-file=.env src/server.ts",
         "scrape": "npx tsx src/app.ts",
-         "dev": "ts-node src/app.ts"
+        "dev": "ts-node src/app.ts"
     },
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",

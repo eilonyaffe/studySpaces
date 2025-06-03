@@ -20,10 +20,8 @@ A Node.js/TypeScript project for managing and serving study space data at BGU.
 ---
 
 ## ⚙️ Scripts
-- `npm run build` → Compile TypeScript
-- `npm run start` → Build & run `index.ts`
-- `npm run dev` → Run with `ts-node`
-- `npm run scrape` → Scrape semester data
+- `npm start` → Build & run `server.ts`
+- `npm run scrape` → Build & run `app.ts`
 
 ---
 
@@ -33,7 +31,7 @@ A Node.js/TypeScript project for managing and serving study space data at BGU.
 npm install
 
 2️⃣ Scrape data (admin):
-npm run start
+npm run scrape
 
 3️⃣ Start server:
-node dist/server.js
+npm start
