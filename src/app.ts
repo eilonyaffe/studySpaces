@@ -5,8 +5,7 @@ import fs from 'fs';
 import { askQuestion } from './utils';
 import { startWithAutoRetryFast } from './index';
 import { initializeDataFiles, fillTimeFilesWithFullBuildingRoomDays, removeOccupiedEntriesFromTimeFiles, squeezeAllJsonFilesToArrayJsonFormat } from './data_post_process';
-
-const retry:boolean = true;  // controls if we retry scraping courses that weren't successfully scraped the first time TODO change later as environment
+import { RETRY} from './config';
 
 async function main() {
   const semester: string = await askQuestion('enter semester number (1, 2, 3):');
@@ -29,7 +28,7 @@ async function main() {
   const unscrapedPath = path.join(unscraped_dir, 'unscraped.json');
   fs.writeFileSync(unscrapedPath, '[]', 'utf-8');
 
-  await startWithAutoRetryFast(outputPath, semester, retry);
+  await startWithAutoRetryFast(outputPath, semester, RETRY);
   console.log("VVV Finished running on the given semester");
 
   initializeDataFiles(semester);

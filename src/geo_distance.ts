@@ -43,7 +43,7 @@ export function sortEntries(validEntries: Entry[], userLat?: number, userLon?: n
   if (userLat !== undefined && userLon !== undefined) { // User gave location
     return validEntries
       .map(entry => {
-        const loc = locations.find(l => l.building === entry.building); //TODO maybe use map instead of array search
+        const loc = locations.find(l => l.building === entry.building);
         const distance = loc
           ? haversine(userLat, userLon, parseFloat(loc.latitude), parseFloat(loc.longitude))
           : Infinity;

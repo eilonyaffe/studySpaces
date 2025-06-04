@@ -7,8 +7,7 @@ import moment from 'moment';
 
 import { hourMap} from './utils';
 import {sortEntries, Entry} from './geo_distance';
-
-const SEMESTER:number = 2;  // to be changed by admin, 1 2 or 3 TODO change later as environment
+import { SEMESTER} from './config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,8 +30,6 @@ app.get("/search", (req, res): void => {
   const { startTime, endTime, given_date, lat, lon } = req.query;
   const userLat = lat ? parseFloat(lat as string) : undefined;
   const userLon = lon ? parseFloat(lon as string) : undefined;
-  console.log(userLat);
-  console.log(userLon);
 
   if (!startTime || !endTime || !given_date) {
     res.status(400).json({ error: "Missing parameters" });
