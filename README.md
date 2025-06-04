@@ -14,7 +14,7 @@ A Node.js/TypeScript project for managing and serving available classroom spaces
 ## 🧠 Logic
 ✅ It is publicly available to view BGU's course schedules on the web  
 ✅ Performing a "complement" for these schedules (which indicate occupancy) allows us to find available rooms  
-✅ If the user provides a location, we use the haversine function to find his distance from available buildings to sort the results  
+✅ If the user provided a location, we sort the results by distance from the various buildings, using the haversine function   
 
 ---
 
