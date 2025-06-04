@@ -11,6 +11,13 @@ A Node.js/TypeScript project for managing and serving available classroom spaces
 
 ---
 
+## 🧠 Logic
+✅ It is publicly available to view BGU's course schedules on the web
+✅ Performing a "complement" for these schedules (which indicate when the rooms are occupied) allows us to find available rooms
+✅ If the user provides a location, we use the haversine function to find his distance from each of the available buildings to sort the available rooms provided to the user
+
+---
+
 ## 🚀 Project Structure
 - `data/full/semester_{semester}/processed/`: JSON files for each hour
 - `templates/index.html`: frontend for selecting time range, date, and location
