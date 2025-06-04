@@ -1,5 +1,9 @@
 import fs from 'fs';
 import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export type Entry = { building: number; room: number };
 
@@ -10,17 +14,24 @@ type Location = {
 };
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // Earth radius in km
-  const toRad = (deg: number) => deg * (Math.PI / 180);
+  const R = 6371000; // earth radius in meters
+  const toRad = (deg: number) => deg * Math.PI / 180;
 
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lon2 - lon1);
 
-  const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon / 2) ** 2;
+  const sinΔφ2 = Math.sin(Δφ / 2);
+  const sinΔλ2 = Math.sin(Δλ / 2);
 
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  const a = sinΔφ2 * sinΔφ2 + Math.cos(φ1) * Math.cos(φ2) * sinΔλ2 * sinΔλ2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  // Clamp c just in case of very tiny rounding errors pushing it above π
+  const safeC = Math.min(Math.PI, Math.max(0, c));
+
+  return R * safeC;
 }
 
 export function sortEntries(validEntries: Entry[], userLat?: number, userLon?: number): Entry[] {

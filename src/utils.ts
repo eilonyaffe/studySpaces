@@ -2,10 +2,6 @@ import * as readline from 'readline';
 import fs from 'fs';
 import path from "path";
 import * as cheerio from "cheerio";
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export interface timeSpace {
   building: number;

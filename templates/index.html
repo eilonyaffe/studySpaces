@@ -98,21 +98,34 @@
 </table>
 
 <script>
-  // Hour dropdowns
+    // Hour dropdowns
   const startSelect = document.getElementById('startTime');
   const endSelect = document.getElementById('endTime');
 
+  // Get current hour and floor it to nearest hour
+  const now = new Date();
+  let currentHour = now.getHours();
+  let flooredHour = Math.floor(currentHour);
+  let endHour = flooredHour + 1;
+
+  // Clamp to valid bounds
+  flooredHour = Math.max(8, Math.min(flooredHour, 19)); // latest valid start: 19
+  endHour = Math.max(9, Math.min(endHour, 20));         // latest valid end: 20
+
   for (let hour = 8; hour <= 20; hour++) {
     const formattedHour = hour.toString().padStart(2, '0') + ':00';
-    const option1 = document.createElement('option');
-    option1.value = formattedHour;
-    option1.text = formattedHour;
-    startSelect.appendChild(option1);
 
-    const option2 = document.createElement('option');
-    option2.value = formattedHour;
-    option2.text = formattedHour;
-    endSelect.appendChild(option2);
+    const startOption = document.createElement('option');
+    startOption.value = formattedHour;
+    startOption.text = formattedHour;
+    if (hour === flooredHour) startOption.selected = true;
+    startSelect.appendChild(startOption);
+
+    const endOption = document.createElement('option');
+    endOption.value = formattedHour;
+    endOption.text = formattedHour;
+    if (hour === endHour) endOption.selected = true;
+    endSelect.appendChild(endOption);
   }
 
   // Date input
