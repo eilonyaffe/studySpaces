@@ -126,8 +126,12 @@
     const startTime = startSelect.value;
     const endTime = endSelect.value;
     const given_date = dateInput.value;
+    const lat = document.getElementById('lat').value;
+    const lon = document.getElementById('lon').value;
 
-    const response = await fetch(`/search?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&given_date=${encodeURIComponent(given_date)}`);
+    const response = await fetch(
+      `/search?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&given_date=${encodeURIComponent(given_date)}&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+    );    
     const data = await response.json();
 
     // Fill the table
@@ -166,12 +170,11 @@
         const { latitude, longitude } = position.coords;
         console.log(`User location: ${latitude}, ${longitude}`);
 
-        // You can send this to the server if needed:
-        // fetch('/register_location', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ lat: latitude, lng: longitude })
-        // });
+        fetch('/register_location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat: latitude, lng: longitude })
+        });
 
         document.getElementById('lat').value = latitude;
         document.getElementById('lon').value = longitude;
