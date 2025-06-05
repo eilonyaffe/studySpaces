@@ -13,6 +13,12 @@ type Location = {
   longitude: string;
 };
 
+function euclidean(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const dx = lat1 - lat2;
+  const dy = lon1 - lon2;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000; // earth radius in meters
   const toRad = (deg: number) => deg * Math.PI / 180;
@@ -34,7 +40,7 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
   return R * safeC;
 }
 
-export function sortEntries(validEntries: Entry[], userLat?: number, userLon?: number): Entry[] {
+export function sortEntries(validEntries: Entry[], dist_func:string, userLat?: number, userLon?: number): Entry[] {
   //read the buildings locations json  
   const locPath = path.join(__dirname, "../static/locations.json");
   const raw = fs.readFileSync(locPath, 'utf-8');
@@ -44,14 +50,30 @@ export function sortEntries(validEntries: Entry[], userLat?: number, userLon?: n
     return validEntries
       .map(entry => {
         const loc = locations.find(l => l.building === entry.building);
-        const distance = loc
-          ? haversine(userLat, userLon, parseFloat(loc.latitude), parseFloat(loc.longitude))
-          : Infinity;
+        let distance: number;
+        if (!loc) {
+          distance = Infinity;
+        } 
+        else {
+          const lat2 = parseFloat(loc.latitude);
+          const lon2 = parseFloat(loc.longitude);
+          distance = dist_func === "euclidian"
+            ? euclidean(userLat, userLon, lat2, lon2)
+            : haversine(userLat, userLon, lat2, lon2);
+        }
         return { ...entry, distance };
       })
-      .sort((a, b) => a.distance - b.distance)
+      .sort((a, b) => {
+        if (a.distance !== b.distance) return a.distance - b.distance;
+        if (a.building !== b.building) return a.building - b.building;
+        return a.room - b.room;
+      })
       .map(({ building, room }) => ({ building, room })); // remove the newly created distance property from the output
-  } else {  // Default: sort by building number
-    return validEntries.sort((a, b) => a.building - b.building);
+  } 
+  else {  // Default: sort by building number
+    return validEntries.sort((a, b) => {
+      if (a.building !== b.building) return a.building - b.building;
+      return a.room - b.room;
+    });
   }
 }

@@ -112,20 +112,21 @@
   <input type="date" id="given_date" name="given_date" required>
   <input type="hidden" id="lat" name="lat">
   <input type="hidden" id="lon" name="lon">
+  
   <div style="position: relative; width: 100%;">
-    <button type="button" id="getLocationBtn">Use My Location</button>
+    <button type="button" id="getLocationBtn">Sort results by my Location</button>
     <div id="locationSpinner"></div>
   </div>
+
   <button type="submit">Submit</button>
 </form>
 
-<h3>Results</h3>
-<table id="resultsTable" border="1" cellpadding="8" style="border-collapse: collapse;">
+<h3 id="resultsHeader" style="display:none;">Results</h3>
+<table id="resultsTable" border="1" cellpadding="8" style="border-collapse: collapse; display: none;">
   <thead>
     <tr>
       <th>Building</th>
       <th>Room</th>
-      <th>Location</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -181,17 +182,18 @@
     );    
     const data = await response.json();
 
-    // Fill the table
-    const tbody = document.querySelector('#resultsTable tbody');
+    const table = document.getElementById('resultsTable');
+    const header = document.getElementById('resultsHeader');
+    const tbody = table.querySelector('tbody');
     tbody.innerHTML = ''; // Clear previous results
 
     if (data.length === 0) {
-      const row = tbody.insertRow();
-      const cell = row.insertCell();
-      cell.colSpan = 3;
-      cell.textContent = 'No results found';
-      cell.style.textAlign = 'center';
+      table.style.display = 'none';
+      header.style.display = 'none';
     } else {
+      header.style.display = 'block';
+      table.style.display = 'table';
+
       data.forEach(entry => {
         const row = tbody.insertRow();
         const cellBuilding = row.insertCell();
@@ -199,9 +201,6 @@
 
         const cellRoom = row.insertCell();
         cellRoom.textContent = entry.room;
-
-        const cellLocation = row.insertCell();
-        cellLocation.textContent = ''; // Leave empty for now
       });
     }
   });
@@ -251,9 +250,6 @@
 </script>
 <p style="margin-top: 40px; font-size: 0.9rem; color: #888;">
   Created by <a href="https://www.linkedin.com/in/eilon-yaffe-335845223" target="_blank" style="color: #333; font-weight: bold; text-decoration: none;">Eilon Yaffe</a>, for the students
-</p>
-<p style="color: #888;">
-  <a href="https://github.com/eilonyaffe/studySpaces/" target="_blank" style="color: #333; font-weight: bold; text-decoration: none;">Github repo</a>
 </p>
 </body>
 </html>

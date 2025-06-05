@@ -7,7 +7,7 @@ import moment from 'moment';
 
 import { hourMap} from './utils';
 import {sortEntries, Entry} from './geo_distance';
-import { SEMESTER} from './config';
+import { SEMESTER, DISTANCE_FUNC} from './config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -82,7 +82,7 @@ app.get("/search", (req, res): void => {
       break;
     }
   }
-  const sorted = sortEntries(validEntries || [], userLat, userLon); //sorted by proximity to the user, if he gave his location
+  const sorted = sortEntries(validEntries || [], DISTANCE_FUNC, userLat, userLon); //sorted by proximity to the user, if he gave his location
   res.json(sorted);
 });
 
