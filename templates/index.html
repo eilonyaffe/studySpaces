@@ -39,6 +39,10 @@
     font-size: 1rem;
   }
 
+  th, td {
+    text-align: left;
+  }
+  
   select, input[type="date"], button {
     width: 100%;
     padding: 10px;
@@ -126,7 +130,7 @@
   <thead>
     <tr>
       <th>Building</th>
-      <th>Room</th>
+      <th>Available Rooms</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -194,14 +198,28 @@
       header.style.display = 'block';
       table.style.display = 'table';
 
+      // Group rooms by building
+      const buildingOrder = [];
+      const buildingMap = {};
+
       data.forEach(entry => {
+        if (!buildingMap[entry.building]) {
+          buildingMap[entry.building] = [];
+          buildingOrder.push(entry.building); // preserve order of first appearance
+        }
+        buildingMap[entry.building].push(entry.room);
+      });
+
+      // Render rows in preserved order
+      buildingOrder.forEach(building => {
         const row = tbody.insertRow();
         const cellBuilding = row.insertCell();
-        cellBuilding.textContent = entry.building;
+        cellBuilding.textContent = building;
 
         const cellRoom = row.insertCell();
-        cellRoom.textContent = entry.room;
+        cellRoom.textContent = buildingMap[building].join(', ');
       });
+
     }
   });
 
