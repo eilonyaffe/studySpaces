@@ -33,3 +33,29 @@ A Node.js/TypeScript project for managing and serving available classroom spaces
 ## ⚙️ Scripts
 - `npm start` → Build & run `server.ts`
 - `npm run scrape` → Build & run `app.ts`
+
+
+**StudySpaces** – Proprietary License (Personal and Educational Use Only)
+
+Copyright © 2025
+
+All rights reserved.
+
+This software and associated documentation files (the "Software") are the exclusive property of the copyright holder.
+
+You are **permitted** to:
+
+- View and use the Software for **personal**, **non-commercial**, or **educational** purposes only.
+
+You are **NOT permitted** to:
+
+- Copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software.
+- Use the Software for any **commercial**, **organizational**, or **public deployment** purposes.
+- Reverse engineer, decompile, or disassemble any part of the Software.
+
+Any use of the Software beyond these permissions requires prior, explicit, and written consent from the copyright holder.
+
+---
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.  
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
