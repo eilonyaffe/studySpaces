@@ -34,8 +34,10 @@ jobs:
 
             if ! git diff --cached --quiet; then
             git commit -m "📦 Weekly data update"
+            git pull --rebase origin ${{ github.ref_name }}
             git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref_name }}
             else
             echo "No changes to commit."
             fi
+
 
