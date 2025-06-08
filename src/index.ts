@@ -73,7 +73,7 @@ async function dataFromPage(course: CourseLink, outputPath: string, first_run: b
 }
 
 async function retryBadCourses(outputPath: string): Promise<void> {
-  const unscrapedPath = path.join("data", "full", "unscraped.json");
+  const unscrapedPath = path.join("data", "unscraped.json");
 
   if (!fs.existsSync(unscrapedPath)) {
     console.log("No unscraped.json file found — skipping retry.");

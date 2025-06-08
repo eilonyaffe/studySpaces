@@ -5,7 +5,7 @@ import {initializeFile, timeSpace } from "./utils";
 
 
 export function initializeDataFiles(semester:string) {
-const dir = path.join(`data/full/semester_${semester}/processed`);
+const dir = path.join(`data/semester_${semester}/processed`);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -22,7 +22,7 @@ const dir = path.join(`data/full/semester_${semester}/processed`);
 export function fillTimeFilesWithFullBuildingRoomDays(semester: string, inputFilePath: string) {
   const inputData: timeSpace[] = JSON.parse(fs.readFileSync(inputFilePath, 'utf-8'));
 
-  const dir = path.join(`data/full/semester_${semester}/processed`);
+  const dir = path.join(`data/semester_${semester}/processed`);
 
   // Collect all unique building-room pairs from the input data
   const buildingRoomPairs: Set<string> = new Set();
@@ -52,13 +52,7 @@ export function fillTimeFilesWithFullBuildingRoomDays(semester: string, inputFil
 //This does the complement operation- uses the scheduled classes to remove occupied studySpaces by some course
 export function removeOccupiedEntriesFromTimeFiles(semester: string, inputFilePath: string) {
   const inputData: timeSpace[] = JSON.parse(fs.readFileSync(inputFilePath, 'utf-8'));
-  const processedDir = path.join(`data/full/semester_${semester}/processed`);
-  const removedDir = path.join(processedDir, 'removed');
-
-  // Create 'removed' directory if it doesn't exist
-  if (!fs.existsSync(removedDir)) {
-    fs.mkdirSync(removedDir, { recursive: true });
-  }
+  const processedDir = path.join(`data/semester_${semester}/processed`);
 
   // For each hourly file (8–20)
   for (let hour = 8; hour <= 20; hour++) {
@@ -70,7 +64,6 @@ export function removeOccupiedEntriesFromTimeFiles(semester: string, inputFilePa
 
     // Arrays for updated entries and removed entries
     const updatedEntries: typeof hourEntries = [];
-    const removedEntries: any[] = [];
 
     for (const entry of hourEntries) {
       const conflicting = inputData.find(scheduled =>
@@ -81,13 +74,7 @@ export function removeOccupiedEntriesFromTimeFiles(semester: string, inputFilePa
         scheduled.end > intervalStart
       );
 
-      if (conflicting) {
-        // Record what was removed and why
-        removedEntries.push({
-          ...entry,
-          reason: conflicting  //inserts the confliction to the file containing the removed
-        });
-      } else {
+      if (!conflicting) {
         // Keep if not occupied
         updatedEntries.push(entry);
       }
@@ -95,19 +82,13 @@ export function removeOccupiedEntriesFromTimeFiles(semester: string, inputFilePa
 
     // Write updated hourly file
     fs.writeFileSync(outputPath, JSON.stringify(updatedEntries, null, 2), 'utf-8');
-
-    // Write removed entries file
-    const removedPath = path.join(removedDir, `${hour}.json`);
-    fs.writeFileSync(removedPath, JSON.stringify(removedEntries, null, 2), 'utf-8');
   }
-
-  console.log("✅ Removed occupied entries from hourly files and stored them in processed/removed/");
 }
 
 export function squeezeAllJsonFilesToArrayJsonFormat(semester: string) {
-  const processedDir = path.join(`data/full/semester_${semester}/processed`);
+  const processedDir = path.join(`data/semester_${semester}/processed`);
 
-  // Helper to process a directory (like processed/ or processed/removed/)
+  // Helper to process a directory (like processed/)
   const squeezeDir = (dirPath: string) => {
     const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.json'));
     for (const file of files) {
@@ -129,12 +110,7 @@ export function squeezeAllJsonFilesToArrayJsonFormat(semester: string) {
     }
   };
 
-  // Process processed/ and processed/removed/
+  // Process processed/
   squeezeDir(processedDir);
-  const removedDir = path.join(processedDir, 'removed');
-  if (fs.existsSync(removedDir)) {
-    squeezeDir(removedDir);
-  }
-
-  console.log("✅ Squeezed all JSON files to valid JSON arrays (each object on its own line)!");
+  console.log("✅ Squeezed all JSON files to valid JSON arrays (each object on its own line)");
 }

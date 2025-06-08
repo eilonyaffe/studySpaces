@@ -45,8 +45,8 @@ app.get("/search", (req, res): void => {
   const m = moment(given_date as string, "YYYY-MM-DD");
   let dayNumber = m.day() + 1; // 0=Sunday, 1=Monday, ..., 6=Saturday
 
-  // Load JSON files from data/full/semester_2/processed/
-  const dirPath = path.join(__dirname, `../data/full/semester_${SEMESTER}/processed`);
+  // Load JSON files from data/semester_2/processed/
+  const dirPath = path.join(__dirname, `../data/semester_${SEMESTER}/processed`);
   // const targetFile = fs.readdirSync(dirPath).find(f => f === `${startTimeHour}.json`);
 
   let validEntries: Entry[] | null = null;

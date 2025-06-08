@@ -2,6 +2,7 @@ import * as readline from 'readline';
 import fs from 'fs';
 import path from "path";
 import * as cheerio from "cheerio";
+import moment from 'moment';
 
 export interface timeSpace {
   building: number;
@@ -40,23 +41,30 @@ export const hourMap: { [key: string]: number } = {
   "20:00": 20,
 };
 
-export function askQuestion(query: string): Promise<string> {
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
-
-return new Promise(resolve =>
-    rl.question(query, answer => {
-    rl.close();
-    resolve(answer.trim());
-    })
-);
-}
-
 export function appendResultsToFile(path: string, items: timeSpace[]) {
     const data = items.map(item => JSON.stringify(item)).join(',\n') + ',\n';
     fs.appendFileSync(path, data, 'utf-8');
+}
+
+export function pruneOldJsonFiles(semester: string): void {
+  const dir = path.join(`data/semester_${semester}`);
+
+  const files = fs.readdirSync(dir)
+    .filter(f => f.endsWith('.json') && !f.startsWith('.') && !f.includes('processed'))
+    .map(f => ({
+      name: f,
+      path: path.join(dir, f),
+      date: moment(f.replace('.json', ''), 'DD-MM-YYYY', true)
+    }))
+    .filter(f => f.date.isValid())
+    .sort((a, b) => b.date.valueOf() - a.date.valueOf());  // Newest first
+
+  const filesToDelete = files.slice(3);  // Keep only latest 3
+
+  for (const file of filesToDelete) {
+    fs.unlinkSync(file.path);
+    console.log(`🗑️ Deleted old JSON file: ${file.name}`);
+  }
 }
 
 export function initializeFile(path: string) {
@@ -70,7 +78,7 @@ export function finalizeFile(path: string) {
 }
 
 export function appendToUnscraped(course: CourseLink) {
-  const unscrapedPath = path.join("data", "full", "unscraped.json");
+  const unscrapedPath = path.join("data", "unscraped.json");
   let unscraped: CourseLink[] = [];
 
   // Create file if it doesn't exist
