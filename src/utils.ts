@@ -1,4 +1,3 @@
-import * as readline from 'readline';
 import fs from 'fs';
 import path from "path";
 import * as cheerio from "cheerio";
