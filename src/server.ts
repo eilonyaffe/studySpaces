@@ -5,9 +5,9 @@ import { dirname } from "path";
 import fs from 'fs';
 import moment from 'moment';
 
-import { hourMap} from './utils';
-import {sortEntries, Entry} from './geo_distance';
-import { SEMESTER, DISTANCE_FUNC} from './config';
+import { hourMap } from './utils.js';
+import { sortEntries, Entry } from './geo_distance.js';
+import { SEMESTER, DISTANCE_FUNC } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
