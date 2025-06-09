@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 app.use(express.static(path.join(__dirname, "../static")));
 
 app.get('/favicon.ico', (req: Request, res: Response) => {
@@ -86,6 +86,6 @@ app.get("/search", (req, res): void => {
   res.json(sorted);
 });
 
-app.listen(port, () => {
-    console.log(`The server is running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`The server is running at http://0.0.0.0:${port}`);
 });
