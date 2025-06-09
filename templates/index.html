@@ -118,11 +118,11 @@
   <input type="hidden" id="lon" name="lon">
   
   <div style="position: relative; width: 100%;">
-    <button type="button" id="getLocationBtn">Sort results by my location</button>
+    <button type="button" id="getLocationAndSubmitBtn">Results sorted by location</button>
     <div id="locationSpinner"></div>
   </div>
 
-  <button type="submit">Submit</button>
+  <button type="submit">Results</button>
 </form>
 
 <h3 id="resultsHeader" style="display:none;">Results</h3>
@@ -223,47 +223,43 @@
     }
   });
 
-  document.getElementById('getLocationBtn').addEventListener('click', () => {
-    const spinner = document.getElementById('locationSpinner');
-    const button = document.getElementById('getLocationBtn');
-    spinner.style.display = 'block';
+  document.getElementById('getLocationAndSubmitBtn').addEventListener('click', () => {
+  const spinner = document.getElementById('locationSpinner');
+  const button = document.getElementById('getLocationAndSubmitBtn');
+  spinner.style.display = 'block';
 
-    if (!navigator.geolocation) {
+  if (!navigator.geolocation) {
+    spinner.style.display = 'none';
+    alert('Geolocation is not supported by your browser.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+
+      document.getElementById('lat').value = latitude;
+      document.getElementById('lon').value = longitude;
+
       spinner.style.display = 'none';
-      alert('Geolocation is not supported by your browser.');
-      return;
+      button.classList.add('locationSuccess');
+
+      setTimeout(() => {
+        button.style.backgroundColor = '#4CAF50';
+        button.style.border = '1px solid #4CAF50';
+        button.style.color = 'white';
+      }, 100);
+
+      // Now trigger form submission
+      document.getElementById('searchForm').requestSubmit();
+    },
+    (error) => {
+      spinner.style.display = 'none';
+      console.error(error);
+      alert('Unable to retrieve your location.');
     }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        console.log(`User location: ${latitude}, ${longitude}`);
-
-        fetch('/register_location', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lat: latitude, lng: longitude })
-        });
-
-        document.getElementById('lat').value = latitude;
-        document.getElementById('lon').value = longitude;
-
-        spinner.style.display = 'none';
-
-        setTimeout(() => {
-          button.style.backgroundColor = '#4CAF50';
-          button.style.border = '1px solid #4CAF50';
-          button.style.color = 'white';
-        }, 100);
-      },
-      (error) => {
-        spinner.style.display = 'none';
-        console.error(error);
-        alert('Unable to retrieve your location.');
-      }
-    );
-  });
-
+  );
+});
 
 </script>
 <p style="margin-top: 40px; font-size: 0.9rem; color: #888;">
