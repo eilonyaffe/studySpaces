@@ -7,6 +7,7 @@
         "build": "tsc",
         "start": "npx tsx watch --env-file=.env src/server.ts",
         "scrape": "npx tsx src/app.ts",
+        "webhook": "tsx src/webhook.ts",
         "dev": "ts-node src/app.ts"
     },
     "devDependencies": {
@@ -26,6 +27,7 @@
         "axios": "^1.9.0",
         "axios-retry": "^4.5.0",
         "better-sqlite3": "^11.10.0",
+        "body-parser": "^2.2.0",
         "cheerio": "^1.0.0",
         "express": "^5.1.0",
         "iconv-lite": "^0.6.3",
