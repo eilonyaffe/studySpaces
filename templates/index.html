@@ -54,7 +54,7 @@
     margin-top: 20px;
   }
 
-  #getLocationBtn {
+  #getLocationAndSubmitBtn  {
     background-color: #444;
     color: white;
     border: none;
@@ -65,7 +65,7 @@
     margin-top: 10px;
   }
   
-  #getLocationBtn:hover {
+  #getLocationAndSubmitBtn:hover {
     background-color: #333;
   }
 
@@ -136,132 +136,123 @@
   <tbody></tbody>
 </table>
 
-<script>
-    // Hour dropdowns
-  const startSelect = document.getElementById('startTime');
-  const endSelect = document.getElementById('endTime');
+  <script>
+    const startSelect = document.getElementById('startTime');
+    const endSelect = document.getElementById('endTime');
 
-  // Get current hour and floor it to nearest hour
-  const now = new Date();
-  let currentHour = now.getHours();
-  let flooredHour = Math.floor(currentHour);
-  let endHour = flooredHour + 1;
+    const now = new Date();
+    let currentHour = now.getHours();
+    let flooredHour = Math.floor(currentHour);
+    let endHour = flooredHour + 1;
 
-  // Clamp to valid bounds
-  flooredHour = Math.max(8, Math.min(flooredHour, 19)); // latest valid start: 19
-  endHour = Math.max(9, Math.min(endHour, 20));         // latest valid end: 20
+    flooredHour = Math.max(8, Math.min(flooredHour, 19));
+    endHour = Math.max(9, Math.min(endHour, 20));
 
-  for (let hour = 8; hour <= 20; hour++) {
-    const formattedHour = hour.toString().padStart(2, '0') + ':00';
+    for (let hour = 8; hour <= 20; hour++) {
+      const formattedHour = hour.toString().padStart(2, '0') + ':00';
 
-    const startOption = document.createElement('option');
-    startOption.value = formattedHour;
-    startOption.text = formattedHour;
-    if (hour === flooredHour) startOption.selected = true;
-    startSelect.appendChild(startOption);
+      const startOption = document.createElement('option');
+      startOption.value = formattedHour;
+      startOption.text = formattedHour;
+      if (hour === flooredHour) startOption.selected = true;
+      startSelect.appendChild(startOption);
 
-    const endOption = document.createElement('option');
-    endOption.value = formattedHour;
-    endOption.text = formattedHour;
-    if (hour === endHour) endOption.selected = true;
-    endSelect.appendChild(endOption);
-  }
+      const endOption = document.createElement('option');
+      endOption.value = formattedHour;
+      endOption.text = formattedHour;
+      if (hour === endHour) endOption.selected = true;
+      endSelect.appendChild(endOption);
+    }
 
-  // Date input
-  const dateInput = document.getElementById('given_date');
-  const today = new Date().toISOString().split('T')[0];
-  dateInput.value = today;
-  dateInput.min = today;
+    const dateInput = document.getElementById('given_date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+    dateInput.min = today;
 
-  document.getElementById('searchForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const startTime = startSelect.value;
-    const endTime = endSelect.value;
-    const given_date = dateInput.value;
-    const lat = document.getElementById('lat').value;
-    const lon = document.getElementById('lon').value;
+    async function fetchResults() {
+      const startTime = startSelect.value;
+      const endTime = endSelect.value;
+      const given_date = dateInput.value;
+      const lat = document.getElementById('lat').value;
+      const lon = document.getElementById('lon').value;
 
-    const response = await fetch(
-      `/search?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&given_date=${encodeURIComponent(given_date)}&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
-    );    
-    const data = await response.json();
+      const response = await fetch(
+        `/search?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&given_date=${encodeURIComponent(given_date)}&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+      );
+      const data = await response.json();
 
-    const table = document.getElementById('resultsTable');
-    const header = document.getElementById('resultsHeader');
-    const tbody = table.querySelector('tbody');
-    tbody.innerHTML = ''; // Clear previous results
+      const table = document.getElementById('resultsTable');
+      const header = document.getElementById('resultsHeader');
+      const tbody = table.querySelector('tbody');
+      tbody.innerHTML = '';
 
-    if (data.length === 0) {
-      table.style.display = 'none';
-      header.style.display = 'none';
-    } else {
-      header.style.display = 'block';
-      table.style.display = 'table';
+      if (data.length === 0) {
+        table.style.display = 'none';
+        header.style.display = 'none';
+      } else {
+        header.style.display = 'block';
+        table.style.display = 'table';
 
-      // Group rooms by building
-      const buildingOrder = [];
-      const buildingMap = {};
+        const buildingOrder = [];
+        const buildingMap = {};
 
-      data.forEach(entry => {
-        if (!buildingMap[entry.building]) {
-          buildingMap[entry.building] = [];
-          buildingOrder.push(entry.building); // preserve order of first appearance
+        data.forEach(entry => {
+          if (!buildingMap[entry.building]) {
+            buildingMap[entry.building] = [];
+            buildingOrder.push(entry.building);
+          }
+          buildingMap[entry.building].push(entry.room);
+        });
+
+        buildingOrder.forEach(building => {
+          const row = tbody.insertRow();
+          const cellBuilding = row.insertCell();
+          cellBuilding.textContent = building;
+
+          const cellRoom = row.insertCell();
+          cellRoom.textContent = buildingMap[building].join(', ');
+        });
+      }
+    }
+
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      fetchResults();
+    });
+
+    document.getElementById('getLocationAndSubmitBtn').addEventListener('click', () => {
+      const spinner = document.getElementById('locationSpinner');
+      const button = document.getElementById('getLocationAndSubmitBtn');
+      spinner.style.display = 'block';
+
+      if (!navigator.geolocation) {
+        spinner.style.display = 'none';
+        alert('Geolocation is not supported by your browser.');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          document.getElementById('lat').value = latitude;
+          document.getElementById('lon').value = longitude;
+
+          spinner.style.display = 'none';
+
+          button.style.backgroundColor = '#4CAF50';
+          button.style.border = '1px solid #4CAF50';
+          button.style.color = 'white';
+
+          fetchResults();
+        },
+        (error) => {
+          spinner.style.display = 'none';
+          console.error(error);
+          alert('Unable to retrieve your location.');
         }
-        buildingMap[entry.building].push(entry.room);
-      });
-
-      // Render rows in preserved order
-      buildingOrder.forEach(building => {
-        const row = tbody.insertRow();
-        const cellBuilding = row.insertCell();
-        cellBuilding.textContent = building;
-
-        const cellRoom = row.insertCell();
-        cellRoom.textContent = buildingMap[building].join(', ');
-      });
-
-    }
-  });
-
-  document.getElementById('getLocationAndSubmitBtn').addEventListener('click', () => {
-  const spinner = document.getElementById('locationSpinner');
-  const button = document.getElementById('getLocationAndSubmitBtn');
-  spinner.style.display = 'block';
-
-  if (!navigator.geolocation) {
-    spinner.style.display = 'none';
-    alert('Geolocation is not supported by your browser.');
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const { latitude, longitude } = position.coords;
-
-      document.getElementById('lat').value = latitude;
-      document.getElementById('lon').value = longitude;
-
-      spinner.style.display = 'none';
-      button.classList.add('locationSuccess');
-
-      setTimeout(() => {
-        button.style.backgroundColor = '#4CAF50';
-        button.style.border = '1px solid #4CAF50';
-        button.style.color = 'white';
-      }, 100);
-
-      // Now trigger form submission
-      document.getElementById('searchForm').requestSubmit();
-    },
-    (error) => {
-      spinner.style.display = 'none';
-      console.error(error);
-      alert('Unable to retrieve your location.');
-    }
-  );
-});
-
-</script>
+      );
+    });
+  </script>
 <p style="margin-top: 40px; font-size: 0.9rem; color: #888;">
   Created by <a href="https://www.linkedin.com/in/eilon-yaffe-335845223" target="_blank" style="color: #333; font-weight: bold; text-decoration: none;">Eilon Yaffe</a>, for the students
 </p>
