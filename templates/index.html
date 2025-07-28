@@ -13,12 +13,6 @@
     flex-direction: column;
     align-items: center;
     margin: 20px;
-    background-image: url('/background.jpg');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-attachment: fixed;
-    background-color: rgba(255, 255, 255, 0.8); /* fallback */
   }
 
   h2 {
@@ -52,6 +46,15 @@
 
   button {
     margin-top: 20px;
+  }
+
+  #bguLogo {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    width: 80px; /* adjust as needed */
+    opacity: 0.85;
+    z-index: 1000;
   }
 
   details {
@@ -175,7 +178,6 @@
 </style>
 </head>
 <body>
-<div style="position: fixed; inset: 0; background: rgba(255, 255, 255, 0.97); z-index: -1;"></div>
 
 <h2>Available classrooms for your study session:</h2>
 
@@ -350,6 +352,6 @@
 <p style="margin-top: 40px; font-size: 0.9rem; color: #888;">
   Created by <a href="https://www.linkedin.com/in/eilon-yaffe-335845223" target="_blank" style="color: #333; font-weight: bold; text-decoration: none;">Eilon Yaffe</a>, for the students
 </p>
-
+<img src="/bgu_logo.png" alt="BGU Logo" id="bguLogo">
 </body>
 </html>
