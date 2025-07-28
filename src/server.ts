@@ -23,9 +23,7 @@ app.get('/favicon.ico', (req: Request, res: Response) => {
 
 app.get("/", (req: Request, res: Response) => {
     const indexPath = path.join(__dirname, "../templates/index.html");
-    let html = fs.readFileSync(indexPath, "utf8");
-    html = html.replace("{{SEMESTER}}", String(SEMESTER));
-    res.send(html);
+    res.sendFile(indexPath);
 });
 
 

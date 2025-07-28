@@ -54,6 +54,80 @@
     margin-top: 20px;
   }
 
+  details {
+    width: 100%;
+  }
+
+  details summary {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+  }
+
+  details[open] summary {
+    background-color: #eef5ff;
+  }
+
+  details p {
+    padding-left: 15px;
+    margin: 10px 0 0;
+  }
+
+  .faq-container {
+    max-width: 600px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    word-wrap: break-word;
+  }
+
+  .faq-container details {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .faq-container summary {
+    display: block;
+    width: 100%;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+
+  .faq-container details[open] summary {
+    background-color: #eef5ff;
+  }
+
+  .faq-container details p {
+    margin: 10px 0 0;
+    padding-left: 15px;
+    box-sizing: border-box;
+    width: 100%;
+    word-break: break-word;
+  }
+
+
+  .tooltip-circle {
+    display: inline-block;
+    margin-left: 6px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #ccc;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: default;
+    position: relative;
+  }
+
   #getLocationAndSubmitBtn  {
     background-color: #444;
     color: white;
@@ -103,8 +177,7 @@
 <body>
 <div style="position: fixed; inset: 0; background: rgba(255, 255, 255, 0.95); z-index: -1;"></div>
 
-<h2>Find available spots in the campus for your study session:</h2>
-<p><strong>Semester:</strong> {{SEMESTER}}</p>
+<h2>Available classrooms for your study session:</h2>
 
 <form id="searchForm" action="/search" method="get">
   <label for="startTime">Start Hour:</label>
@@ -254,8 +327,29 @@
       );
     });
   </script>
+
+<div class="faq-container">
+  <h2 style="text-align: center;">FAQ</h2>
+
+  <details>
+    <summary>How are classrooms selected for availability?</summary>
+    <p>Given the selected date and time range, we check hourly scheduled courses to show classrooms that remain empty throughout the entered time</p>
+  </details>
+
+  <details>
+    <summary>How does location sorting work?</summary>
+    <p>If you allow location access, buildings are ranked by distance using coordinates from your current position.</p>
+  </details>
+
+  <details>
+    <summary>Why a classroom that appeared to be available was actually occupied?</summary>
+    <p>It could be that a course moved rooms last-minute, a classroom was booked unofficially, a group of students just sat there to study, etc.</p>
+  </details>
+</div>
+
 <p style="margin-top: 40px; font-size: 0.9rem; color: #888;">
   Created by <a href="https://www.linkedin.com/in/eilon-yaffe-335845223" target="_blank" style="color: #333; font-weight: bold; text-decoration: none;">Eilon Yaffe</a>, for the students
 </p>
+
 </body>
 </html>
