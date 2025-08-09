@@ -3270,13 +3270,6 @@
   },
   {
     "department": "201",
-    "degree_level": "1",
-    "course_number": "9711",
-    "year": "2025",
-    "semester": "1"
-  },
-  {
-    "department": "201",
     "degree_level": "2",
     "course_number": "4921",
     "year": "2025",
@@ -6351,13 +6344,6 @@
   {
     "department": "471",
     "degree_level": "8",
-    "course_number": "80",
-    "year": "2025",
-    "semester": "1"
-  },
-  {
-    "department": "471",
-    "degree_level": "8",
     "course_number": "1070",
     "year": "2025",
     "semester": "1"
@@ -8809,6 +8795,13 @@
     "department": "682",
     "degree_level": "2",
     "course_number": "9992",
+    "year": "2025",
+    "semester": "1"
+  },
+  {
+    "department": "682",
+    "degree_level": "2",
+    "course_number": "9993",
     "year": "2025",
     "semester": "1"
   },
