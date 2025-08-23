@@ -6568,13 +6568,6 @@
   {
     "department": "471",
     "degree_level": "8",
-    "course_number": "5077",
-    "year": "2025",
-    "semester": "1"
-  },
-  {
-    "department": "471",
-    "degree_level": "8",
     "course_number": "5078",
     "year": "2025",
     "semester": "1"
@@ -6674,13 +6667,6 @@
     "department": "471",
     "degree_level": "8",
     "course_number": "8060",
-    "year": "2025",
-    "semester": "1"
-  },
-  {
-    "department": "471",
-    "degree_level": "8",
-    "course_number": "9005",
     "year": "2025",
     "semester": "1"
   },
