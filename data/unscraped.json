@@ -3284,6 +3284,13 @@
   },
   {
     "department": "201",
+    "degree_level": "1",
+    "course_number": "9671",
+    "year": "2025",
+    "semester": "1"
+  },
+  {
+    "department": "201",
     "degree_level": "2",
     "course_number": "4921",
     "year": "2025",
