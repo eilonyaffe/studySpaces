@@ -2,6 +2,13 @@
   {
     "department": "1",
     "degree_level": "1",
+    "course_number": "3003",
+    "year": "2025",
+    "semester": "1"
+  },
+  {
+    "department": "1",
+    "degree_level": "1",
     "course_number": "7000",
     "year": "2025",
     "semester": "1"
@@ -3279,13 +3286,6 @@
     "department": "201",
     "degree_level": "1",
     "course_number": "7778",
-    "year": "2025",
-    "semester": "1"
-  },
-  {
-    "department": "201",
-    "degree_level": "1",
-    "course_number": "9671",
     "year": "2025",
     "semester": "1"
   },
