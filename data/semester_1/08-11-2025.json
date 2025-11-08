@@ -2688,7 +2688,6 @@
 {"building":27,"room":117,"day":1,"start":1000,"end":1400},
 {"building":27,"room":202,"day":3,"start":1700,"end":2000},
 {"building":27,"room":202,"day":3,"start":800,"end":1100},
-{"building":27,"room":202,"day":3,"start":1100,"end":1400},
 {"building":27,"room":202,"day":3,"start":1400,"end":1700},
 {"building":28,"room":102,"day":3,"start":1100,"end":1400},
 {"building":28,"room":104,"day":3,"start":1100,"end":1400},
