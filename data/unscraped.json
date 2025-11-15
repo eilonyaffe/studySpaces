@@ -5777,6 +5777,13 @@
   {
     "department": "374",
     "degree_level": "1",
+    "course_number": "2010",
+    "year": "2025",
+    "semester": "1"
+  },
+  {
+    "department": "374",
+    "degree_level": "1",
     "course_number": "3100",
     "year": "2025",
     "semester": "1"
@@ -7465,13 +7472,6 @@
     "department": "480",
     "degree_level": "2",
     "course_number": "13",
-    "year": "2025",
-    "semester": "1"
-  },
-  {
-    "department": "480",
-    "degree_level": "2",
-    "course_number": "1000",
     "year": "2025",
     "semester": "1"
   },
