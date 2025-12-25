@@ -5,16 +5,16 @@ A Node.js/TypeScript project for managing and serving available classroom spaces
 ---
 
 ## Features
-Scrapes room availability data  
-Serves user search queries, filtered by date, time range, and sorted by location (of provided by the user)  
-Simple yet functional HTML frontend  
+- Scrapes room availability data  
+- Serves user search queries, filtered by date, time range, and sorted by location (of provided by the user)  
+- Simple yet functional HTML frontend  
 
 ---
 
 ## Logic
-It is publicly available to view BGU's course schedules on the web  
-Performing a "complement" for these schedules (which indicate occupancy) allows us to find available rooms  
-If the user provided a location, we sort results by distance from the buildings, by the haversine function   
+- It is publicly available to view BGU's course schedules on the web  
+- Performing a "complement" for these schedules (which indicate occupancy) allows us to find available rooms  
+- If the user provided a location, we sort results by distance from the buildings, by the haversine function   
 
 ---
 
