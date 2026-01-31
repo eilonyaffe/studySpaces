@@ -4930,6 +4930,13 @@
   {
     "department": "366",
     "degree_level": "2",
+    "course_number": "6400",
+    "year": "2026",
+    "semester": "1"
+  },
+  {
+    "department": "366",
+    "degree_level": "2",
     "course_number": "7777",
     "year": "2026",
     "semester": "1"
