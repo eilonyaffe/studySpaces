@@ -521,6 +521,7 @@
 {"building":34,"room":107,"day":5,"start":1200,"end":1400},
 {"building":34,"room":210,"day":2,"start":800,"end":1000},
 {"building":32,"room":113,"day":2,"start":1400,"end":1600},
+{"building":72,"room":209,"day":2,"start":1000,"end":1200},
 {"building":72,"room":216,"day":5,"start":800,"end":1000},
 {"building":72,"room":216,"day":5,"start":1000,"end":1200},
 {"building":28,"room":103,"day":2,"start":1000,"end":1200},
