@@ -5181,6 +5181,13 @@
   },
   {
     "department": "372",
+    "degree_level": "5",
+    "course_number": "2026",
+    "year": "2026",
+    "semester": "1"
+  },
+  {
+    "department": "372",
     "degree_level": "7",
     "course_number": "51",
     "year": "2026",
