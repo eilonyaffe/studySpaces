@@ -919,6 +919,20 @@
   {
     "department": "100",
     "degree_level": "5",
+    "course_number": "10",
+    "year": "2026",
+    "semester": "1"
+  },
+  {
+    "department": "100",
+    "degree_level": "5",
+    "course_number": "11",
+    "year": "2026",
+    "semester": "1"
+  },
+  {
+    "department": "100",
+    "degree_level": "5",
     "course_number": "26",
     "year": "2026",
     "semester": "1"
