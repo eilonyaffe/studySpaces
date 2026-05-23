@@ -990,7 +990,6 @@
 {"building":32,"room":108,"day":1,"start":1200,"end":1400},
 {"building":72,"room":122,"day":3,"start":800,"end":1000},
 {"building":90,"room":137,"day":3,"start":1000,"end":1200},
-{"building":90,"room":233,"day":2,"start":1400,"end":1600},
 {"building":90,"room":325,"day":4,"start":1000,"end":1200},
 {"building":72,"room":119,"day":2,"start":1000,"end":1400},
 {"building":90,"room":140,"day":3,"start":1200,"end":1400},
