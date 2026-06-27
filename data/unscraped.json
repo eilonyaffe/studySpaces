@@ -5537,6 +5537,13 @@
     "semester": "1"
   },
   {
+    "department": "379",
+    "degree_level": "2",
+    "course_number": "8811",
+    "year": "2026",
+    "semester": "1"
+  },
+  {
     "department": "381",
     "degree_level": "1",
     "course_number": "4030",
@@ -6751,6 +6758,13 @@
     "department": "478",
     "degree_level": "1",
     "course_number": "6",
+    "year": "2026",
+    "semester": "1"
+  },
+  {
+    "department": "478",
+    "degree_level": "1",
+    "course_number": "2801",
     "year": "2026",
     "semester": "1"
   },
