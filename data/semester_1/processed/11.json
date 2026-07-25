@@ -1,7 +1,4 @@
 [
-{"building":72,"room":504,"day":5},
-{"building":72,"room":504,"day":6},
-{"building":72,"room":504,"day":7},
 {"building":28,"room":105,"day":4},
 {"building":28,"room":105,"day":7},
 {"building":90,"room":239,"day":1},
@@ -235,6 +232,10 @@
 {"building":72,"room":122,"day":5},
 {"building":72,"room":122,"day":6},
 {"building":72,"room":122,"day":7},
+{"building":72,"room":504,"day":1},
+{"building":72,"room":504,"day":5},
+{"building":72,"room":504,"day":6},
+{"building":72,"room":504,"day":7},
 {"building":72,"room":487,"day":1},
 {"building":72,"room":487,"day":5},
 {"building":72,"room":487,"day":6},
