@@ -2256,7 +2256,7 @@
   {
     "department": "142",
     "degree_level": "1",
-    "course_number": "191",
+    "course_number": "179",
     "year": "2026",
     "semester": "1"
   },
@@ -7038,6 +7038,13 @@
     "department": "483",
     "degree_level": "2",
     "course_number": "2030",
+    "year": "2026",
+    "semester": "1"
+  },
+  {
+    "department": "483",
+    "degree_level": "2",
+    "course_number": "2032",
     "year": "2026",
     "semester": "1"
   },
