@@ -5833,6 +5833,13 @@
   {
     "department": "471",
     "degree_level": "8",
+    "course_number": "1900",
+    "year": "2026",
+    "semester": "1"
+  },
+  {
+    "department": "471",
+    "degree_level": "8",
     "course_number": "2000",
     "year": "2026",
     "semester": "1"
