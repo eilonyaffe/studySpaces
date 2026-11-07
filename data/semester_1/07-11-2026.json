@@ -3044,8 +3044,5 @@
 {"building":90,"room":230,"day":3,"start":1600,"end":1800},
 {"building":97,"room":202,"day":2,"start":1400,"end":1600},
 {"building":90,"room":240,"day":4,"start":1200,"end":1400},
-{"building":41,"room":1,"day":3,"start":1400,"end":1600},
-{"building":97,"room":205,"day":2,"start":900,"end":1100},
-{"building":32,"room":114,"day":4,"start":1600,"end":1800},
 {"building":90,"room":227,"day":1,"start":1500,"end":1700}
 ]
